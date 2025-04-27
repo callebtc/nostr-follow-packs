@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { getFollowLists } from '$lib/services/follow-list.service';
   import type { FollowList } from '$lib/types/follow-list';
+  import { getRelativeTime } from '$lib/utils/date';
 
   let followLists: FollowList[] = [];
   let loading = true;
@@ -115,7 +116,7 @@
               </div>
               
               <p class="text-sm text-gray-500 mt-2">
-                {list.entries.length} {list.entries.length === 1 ? 'user' : 'users'}
+                {list.entries.length} {list.entries.length === 1 ? 'user' : 'users'} · Created {getRelativeTime(list.createdAt)}
               </p>
             </div>
           </a>

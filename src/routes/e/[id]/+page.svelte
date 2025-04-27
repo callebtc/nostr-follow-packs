@@ -6,7 +6,7 @@
   import { hexToNpub } from '$lib/services/vertex-search';
   import { goto } from '$app/navigation';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
-
+  import { getRelativeTime } from '$lib/utils/date';
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
@@ -160,7 +160,7 @@
                 alt={followList.authorName || 'Author'} 
                 class="w-6 h-6 rounded-full mr-2"
               />
-              <span class="text-gray-600">Created by {followList.authorName || 'Unknown'}</span>
+              <span class="text-gray-600">Created by {followList.authorName || 'Unknown'} · {getRelativeTime(followList.createdAt)}</span>
             </div>
           {/if}
         </div>

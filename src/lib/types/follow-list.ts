@@ -87,5 +87,8 @@ export function createFollowListEvent(followList: Omit<FollowList, 'eventId' | '
         event.tags.push(['p', entry.pubkey]);
     });
 
+    // Add the created at tag to current timestamp
+    event.created_at = Math.floor(Date.now() / 1000);
+
     return event;
 } 

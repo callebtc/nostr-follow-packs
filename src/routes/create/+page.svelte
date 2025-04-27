@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
   import { user } from '$lib/stores/user';
   import { searchUsers, npubToHex, isValidNpub } from '$lib/services/vertex-search';
-  import { publishFollowList, getFollowListById } from '$lib/services/follow-list.service';
+  import { publishFollowList, getFollowListById, deleteFollowList } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
   import type { VertexSearchResult } from '$lib/services/vertex-search';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
@@ -27,6 +27,8 @@
   let editMode = false;
   let editId = '';
   let listId = '';
+  let showDeleteConfirm = false;
+  let deleting = false;
   
   // Validation state
   let nameValid = true;
@@ -41,6 +43,40 @@
       await loadExistingList(editParam);
     }
   });
+  
+  // Handle delete button click
+  function handleDelete() {
+    showDeleteConfirm = true;
+  }
+  
+  // Handle delete confirmation
+  async function confirmDelete() {
+    if (!listId) return;
+    
+    deleting = true;
+    try {
+      const deleted = await deleteFollowList(listId, editId);
+      if (deleted) {
+        // Navigate back to home
+        goto('/');
+      } else {
+        // Handle error
+        error = 'Failed to delete follow list';
+        showDeleteConfirm = false;
+      }
+    } catch (err) {
+      console.error('Error deleting follow list:', err);
+      error = `Error deleting: ${err.message || 'An unknown error occurred'}`;
+      showDeleteConfirm = false;
+    } finally {
+      deleting = false;
+    }
+  }
+  
+  // Cancel deletion
+  function cancelDelete() {
+    showDeleteConfirm = false;
+  }
   
   // Load an existing list for editing
   async function loadExistingList(id: string) {
@@ -227,6 +263,34 @@
         </div>
       {/if}
       
+      <!-- Delete Confirmation Modal -->
+      {#if showDeleteConfirm}
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Delete Follow List</h3>
+            <p class="text-gray-700 mb-6">
+              Are you sure you want to delete the follow list "{name}"? This action cannot be undone.
+            </p>
+            <div class="flex justify-end space-x-3">
+              <button 
+                on:click={cancelDelete} 
+                class="btn btn-secondary"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button 
+                on:click={confirmDelete} 
+                class="btn btn-error"
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete Forever'}
+              </button>
+            </div>
+          </div>
+        </div>
+      {/if}
+      
       <form on:submit|preventDefault={handleSubmit} class="bg-white shadow-sm rounded-lg overflow-hidden">
         <div class="p-6 border-b">
           <h2 class="text-xl font-medium mb-6">Follow List Details</h2>
@@ -391,7 +455,19 @@
           </div>
         </div>
         
-        <div class="p-6 flex justify-end">
+        <div class="p-6 flex justify-between">
+          {#if editMode}
+            <button
+              type="button"
+              on:click={handleDelete}
+              class="btn btn-error px-6 py-3 text-base"
+            >
+              Delete List
+            </button>
+          {:else}
+            <div></div>
+          {/if}
+          
           <button
             type="submit"
             disabled={submitting}

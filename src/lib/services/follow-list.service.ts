@@ -1,5 +1,5 @@
 import { ndk, getNdkWithSigner, DEFAULT_RELAYS } from '$lib/nostr/ndk';
-import type { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
     parseFollowListEvent,
@@ -204,4 +204,59 @@ export async function publishFollowList(
         logDebug('Error publishing follow list:', error);
         return null;
     }
-} 
+}
+
+/**
+ * Delete a follow list by its ID
+ */
+export async function deleteFollowList(id: string, eventId: string): Promise<boolean> {
+    logDebug('Deleting follow list with ID:', id);
+
+    try {
+        // Make sure we have a signer
+        const signerNdk = await getNdkWithSigner();
+        logDebug('Got signer NDK instance');
+
+        // Create deletion event (kind 5)
+        const event = new NDKEvent();
+        event.kind = 5; // Deletion request
+        event.ndk = signerNdk;
+
+        // Get the current user's pubkey
+        const userPubkey = await (window as any).nostr.getPublicKey();
+
+        // Add an e-tag for the event ID
+        event.tags.push(['e', eventId]);
+
+        // Add the a-tag for parametrized replaceable event
+        event.tags.push(['a', `${FOLLOW_LIST_KIND}:${userPubkey}:${eventId}`]);
+
+        // Add k-tag for the kind being deleted
+        event.tags.push(['k', FOLLOW_LIST_KIND.toString()]);
+
+        // Optional deletion reason
+        event.content = 'Follow list deleted by user';
+
+        // Sign and publish the event
+        await event.sign();
+        logDebug('Signed deletion event with ID:', event.id);
+
+        // Publish to each relay individually
+        for (const relayUrl of DEFAULT_RELAYS) {
+            try {
+                const relay = await signerNdk.pool.getRelay(relayUrl);
+                await relay.publish(event);
+                logDebug(`Published deletion request to ${relayUrl}`);
+            } catch (err) {
+                logDebug(`Failed to publish deletion request to ${relayUrl}:`, err);
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting follow list:', error);
+        logDebug('Error deleting follow list:', error);
+        return false;
+    }
+}
+

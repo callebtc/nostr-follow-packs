@@ -66,7 +66,7 @@ export async function getNdkWithSigner(): Promise<NDK> {
 }
 
 export async function publishEvent(event: NDKEvent) {
-    const PUBLISH_TIMEOUT_MS = 2000;
+    const PUBLISH_TIMEOUT_MS = 5000;
 
     const signerNdk = await getNdkWithSigner();
     const currentUser = get(user);

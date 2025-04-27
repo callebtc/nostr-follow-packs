@@ -3,6 +3,7 @@
   import { user } from '$lib/stores/user';
   import { goto } from '$app/navigation';
   import { getFollowLists } from '$lib/services/follow-list.service';
+  import { getProfileByPubkey } from '$lib/stores/user';
   import type { FollowList } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
 
@@ -12,6 +13,22 @@
   onMount(async () => {
     try {
       followLists = await getFollowLists();
+      
+      // Fetch profile information for each preview user in each list
+      for (const list of followLists) {
+        const previewEntries = list.entries.slice(0, 5);
+        for (const entry of previewEntries) {
+          try {
+            if (!entry.name || !entry.picture) {
+              const profile = await getProfileByPubkey(entry.pubkey);
+              entry.name = profile.name;
+              entry.picture = profile.picture;
+            }
+          } catch (error) {
+            console.error(`Error fetching profile for ${entry.pubkey}:`, error);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error fetching follow lists:', error);
     } finally {

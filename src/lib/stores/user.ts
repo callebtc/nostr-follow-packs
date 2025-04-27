@@ -157,7 +157,11 @@ export async function loadUser(): Promise<void> {
         const relaysEvents = await ndk.fetchEvents(relaysFilter);
         for (const event of relaysEvents) {
             if (event.tags.length > 0) {
-                userProfile.relays.add(event.tags[0][1]);
+                for (const tag of event.tags) {
+                    if (tag[0] === 'r' && tag[1]) {
+                        userProfile.relays.add(tag[1]);
+                    }
+                }
             }
         }
         // Save the user profile to the store and cache
@@ -251,8 +255,9 @@ export async function followUser(pubkeyToFollow: string): Promise<boolean> {
         // Sign with the extension
         await event.sign();
 
-        // Publish to each relay individually
-        for (const relayUrl of DEFAULT_RELAYS) {
+        // Publish to currentUser.relays + DEFAULT_RELAYS
+        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
+        for (const relayUrl of allRelays) {
             try {
                 const relay = await signerNdk.pool.getRelay(relayUrl);
                 await relay.publish(event);
@@ -307,7 +312,8 @@ export async function restoreFollowSnapshot(snapshot: FollowSnapshot): Promise<b
         await event.sign();
 
         // Publish to each relay individually
-        for (const relayUrl of DEFAULT_RELAYS) {
+        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
+        for (const relayUrl of allRelays) {
             try {
                 const relay = await signerNdk.pool.getRelay(relayUrl);
                 await relay.publish(event);

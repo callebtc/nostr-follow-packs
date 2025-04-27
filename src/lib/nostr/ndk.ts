@@ -13,8 +13,10 @@ export const DEFAULT_RELAYS = [
     'wss://relay.damus.io',
     'wss://relay.nostr.band',
     'wss://purplepag.es',
-    'wss://relay.snort.social',
-    'wss://relay.8333.space'
+    'wss://relay.8333.space',
+    "wss://eden.nostr.land",
+    "wss://nostr-pub.wellorder.net",
+    "wss://nostr.oxtr.dev"
 ];
 
 // Create and configure the NDK instance

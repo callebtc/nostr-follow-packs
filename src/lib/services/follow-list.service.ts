@@ -9,7 +9,8 @@ import type {
     FollowList,
     FollowListEntry
 } from '$lib/types/follow-list';
-import { getProfileByPubkey } from '$lib/stores/user';
+import { getProfileByPubkey, user } from '$lib/stores/user';
+import { get } from 'svelte/store';
 
 // Debug logging configuration
 const DEBUG = true;
@@ -159,6 +160,10 @@ export async function publishFollowList(
     logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length, description });
 
     try {
+        // Get the current user
+        const currentUser = get(user);
+        if (!currentUser) throw new Error('No logged in user');
+
         // Make sure we have a signer
         const signerNdk = await getNdkWithSigner();
         logDebug('Got signer NDK instance');
@@ -190,7 +195,8 @@ export async function publishFollowList(
         // logDebug('Published event successfully');
 
         // Publish to each relay individually
-        for (const relayUrl of DEFAULT_RELAYS) {
+        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
+        for (const relayUrl of allRelays) {
             try {
                 const relay = await signerNdk.pool.getRelay(relayUrl);
                 await relay.publish(event);
@@ -215,6 +221,10 @@ export async function deleteFollowList(id: string, eventId: string): Promise<boo
     logDebug('Deleting follow list with ID:', id);
 
     try {
+        // Get the current user
+        const currentUser = get(user);
+        if (!currentUser) throw new Error('No logged in user');
+
         // Make sure we have a signer
         const signerNdk = await getNdkWithSigner();
         logDebug('Got signer NDK instance');
@@ -244,7 +254,8 @@ export async function deleteFollowList(id: string, eventId: string): Promise<boo
         logDebug('Signed deletion event with ID:', event.id);
 
         // Publish to each relay individually
-        for (const relayUrl of DEFAULT_RELAYS) {
+        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
+        for (const relayUrl of allRelays) {
             try {
                 const relay = await signerNdk.pool.getRelay(relayUrl);
                 await relay.publish(event);

@@ -10,6 +10,7 @@ export interface FollowListEntry {
     npub?: string;
     bio?: string;
     nip05?: string;
+    nip05Verified?: boolean;
 }
 
 export interface FollowList {

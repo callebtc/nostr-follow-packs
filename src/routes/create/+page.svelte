@@ -109,6 +109,15 @@
       description = list.description || '';
       listId = list.id;
       selectedEntries = [...list.entries];
+
+      // reactively get profile info for each entry
+      selectedEntries.forEach(async (entry) => {
+        const profile = await getProfileByPubkey(entry.pubkey);
+        entry.name = profile.name;
+        entry.picture = profile.picture;
+        entry.bio = profile.bio;
+        entry.nip05 = profile.nip05;
+      });
       
       logDebug('Loaded existing list for editing:', { id, name, entries: selectedEntries.length });
     } catch (err: any) {
@@ -441,6 +450,11 @@
                       />
                       <div>
                         <p class="font-medium">{entry.name || 'Unknown User'}</p>
+                        {#if entry.nip05}
+                          <p class="text-xs text-gray-500">
+                            {entry.nip05}
+                          </p>
+                        {/if}
                         <p class="text-xs text-gray-500">{entry.pubkey.substring(0, 8)}...{entry.pubkey.substring(entry.pubkey.length - 8)}</p>
                       </div>
                     </div>

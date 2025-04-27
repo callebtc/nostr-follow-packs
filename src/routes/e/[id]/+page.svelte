@@ -73,7 +73,7 @@
       const result = await followUser(entry.pubkey);
       if (result) {
         success = `You are now following ${entry.name || 'this user'}`;
-        setTimeout(() => { success = ''; }, 3000);
+        setTimeout(() => { success = ''; }, 5000);
       }
     } catch (err) {
       console.error('Error following user:', err);
@@ -105,7 +105,7 @@
         setTimeout(() => { success = ''; }, 5000);
       } else {
         success = 'You were already following all users in this list';
-        setTimeout(() => { success = ''; }, 3000);
+        setTimeout(() => { success = ''; }, 5000);
       }
     } catch (err) {
       console.error('Error in follow all:', err);
@@ -222,9 +222,9 @@
               <div>
                 <h3 class="text-lg font-medium text-gray-900">{entry.name || 'Unknown User'}
                   {#if entry.nip05}
-                    <a href={`https://${entry.nip05}`} class="text-xs text-gray-500 hover:text-gray-700 transition">
+                    <span class="text-xs text-gray-500 hover:text-gray-700 transition">
                       {entry.nip05}
-                    </a>
+                    </span>
                   {/if}
                 </h3>
                 <button 

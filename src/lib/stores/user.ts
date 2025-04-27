@@ -186,7 +186,7 @@ export async function loadUser(): Promise<void> {
 /**
  * Get profile data for a given public key
  */
-export async function getProfileByPubkey(pubkey: string): Promise<{ name?: string, picture?: string, bio?: string, nip05?: string }> {
+export async function getProfileByPubkey(pubkey: string): Promise<{ name?: string, picture?: string, bio?: string, nip05?: string, nip05Verified?: boolean }> {
     // Check local cache first
     const cacheKey = PROFILE_CACHE_PREFIX + pubkey;
     const cachedProfile = localStorage.getItem(cacheKey);
@@ -213,11 +213,21 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
             name: ndkUser.profile?.name,
             picture: ndkUser.profile?.picture,
             bio: ndkUser.profile?.about,
-            nip05: ndkUser.profile?.nip05
+            nip05: ndkUser.profile?.nip05,
+            nip05Verified: false
         };
 
         // strip bio from all line breaks
         profile.bio = profile.bio?.replace(/\n/g, ' ');
+
+        // // check if the nip05 is verified
+        // if (profile.nip05) {
+        //     try {
+        //         profile.nip05Verified = await isNip05Verified(pubkey, profile.nip05);
+        //     } catch (error) {
+        //         console.error(`Error checking nip05 verification for ${pubkey}:`, error);
+        //     }
+        // }
 
         // Cache the result
         localStorage.setItem(cacheKey, JSON.stringify({
@@ -230,6 +240,18 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
         console.error(`Error fetching profile for ${pubkey}:`, error);
         return {};
     }
+}
+
+/**
+ * Check if a NIP-05 domain is verified
+ */
+export async function isNip05Verified(pubkey: string, nip05: string): Promise<boolean> {
+    const domain = nip05.split('@')[1];
+    const user = nip05.split('@')[0];
+    const url = `https://${domain}/.well-known/nostr.json?format=json`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.names[user] === pubkey;
 }
 
 /**

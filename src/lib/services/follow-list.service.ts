@@ -64,19 +64,18 @@ export async function getAuthorProfile(list: FollowList) {
     return list;
 }
 
-export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined) {
+export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined): Promise<FollowList> {
     const entriesToLoad = maxEntries ? Math.min(list.entries.length, maxEntries) : list.entries.length;
     for (let i = 0; i < entriesToLoad; i++) {
         try {
             const entry = list.entries[i];
             const profile = await getProfileByPubkey(entry.pubkey);
             // Create a new entry object to trigger reactivity
-            const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05 };
+            const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05, nip05Verified: profile.nip05Verified };
             // Replace the entry in the array with the new object
             list.entries[i] = updatedEntry;
             // Force the component to update by replacing the entire list reference
             list = { ...list, entries: [...list.entries] };
-            logDebug(`Updated profile for entry:`, { pubkey: entry.pubkey, name: profile.name });
         } catch (err) {
             console.error(`Error fetching profile for entry:`, err);
             logDebug(`Error fetching profile for entry:`, err);

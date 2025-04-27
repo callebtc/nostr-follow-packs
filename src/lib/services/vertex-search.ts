@@ -26,6 +26,11 @@ const VERTEX_SEARCH_RESPONSE_KIND = 6315 as unknown as number;
 const VERTEX_ERROR_KIND = 7000 as unknown as number;
 
 /**
+ * Vertex specific relay
+ */
+const VERTEX_RELAY = 'wss://relay.vertexlab.io';
+
+/**
  * Search for a user by name or npub using Vertex AI
  */
 export async function searchUsers(query: string): Promise<VertexSearchResult[]> {
@@ -45,49 +50,92 @@ export async function searchUsers(query: string): Promise<VertexSearchResult[]> 
         const searchEvent = new NDKEvent(signerNdk);
         searchEvent.kind = VERTEX_SEARCH_REQUEST_KIND;
         searchEvent.content = '';
-        searchEvent.tags = [['param', 'search', query]];
+        searchEvent.tags = [
+            ['param', 'search', query],
+            // Add additional params for better results
+            ['param', 'limit', '10']
+        ];
 
         logDebug('Created search event:', searchEvent);
 
-        // Sign and publish the event
+        // Sign the event
         try {
             await searchEvent.sign();
             logDebug('Signed event');
         } catch (e) {
             logDebug('Error signing event:', e);
-            // Continue with an unsigned event for public relays that don't require authentication
+            // If we can't sign, we can't proceed - Vertex requires signed events
+            throw new Error('Failed to sign search request');
         }
 
-        await searchEvent.publish();
-        logDebug('Published event with ID:', searchEvent.id);
+        // Try to publish specifically to the Vertex relay
+        try {
+            const vertexRelay = Array.from(signerNdk.pool.relays.values()).find((relay: any) =>
+                relay.url === VERTEX_RELAY || relay.url.includes('vertexlab.io')
+            );
+
+            if (vertexRelay) {
+                logDebug('Publishing directly to Vertex relay:', vertexRelay.url);
+                await vertexRelay.publish(searchEvent);
+                logDebug('Published to Vertex relay successfully');
+            } else {
+                // If we can't find the specific relay, try publishing to all
+                logDebug('Vertex relay not found, publishing to all relays');
+                await searchEvent.publish();
+            }
+
+            logDebug('Published event with ID:', searchEvent.id);
+        } catch (pubError) {
+            logDebug('Publish error, proceeding anyway:', pubError);
+            // Continue even if publish fails - the event might have been sent
+        }
 
         // Subscribe to the responses
         const filter: NDKFilter = {
             kinds: [VERTEX_SEARCH_RESPONSE_KIND, VERTEX_ERROR_KIND],
             '#e': [searchEvent.id],
+            limit: 5,
         };
 
         logDebug('Waiting for responses with filter:', filter);
 
-        const timeout = new Promise<NDKEvent[]>(resolve => {
+        // Use a longer timeout since vertex might take time to respond
+        const timeoutDuration = 10000; // 10 seconds
+
+        // Promise that resolves with events
+        const fetchPromise = new Promise<NDKEvent[]>((resolve) => {
+            const events: NDKEvent[] = [];
+            const subscription = signerNdk.subscribe(filter, { closeOnEose: true });
+
+            subscription.on('event', (event: NDKEvent) => {
+                logDebug('Received event:', event.kind);
+                events.push(event);
+            });
+
+            subscription.on('eose', () => {
+                logDebug('End of stored events');
+                resolve(events);
+            });
+        });
+
+        // Set a timeout
+        const timeoutPromise = new Promise<NDKEvent[]>((resolve) => {
             setTimeout(() => {
                 logDebug('Search timeout reached');
                 resolve([]);
-            }, 8000); // 8 second timeout (increased from 5s)
+            }, timeoutDuration);
         });
 
         // Wait for responses (first result or timeout)
         const responses = await Promise.race([
-            ndk.fetchEvents(filter),
-            timeout
+            fetchPromise,
+            timeoutPromise
         ]);
 
-        // Convert to array if it's a Set
-        const responseArray = Array.from(responses);
-        logDebug('Received responses:', responseArray.length);
+        logDebug('Received responses:', responses.length);
 
         // Process responses
-        for (const response of responseArray) {
+        for (const response of responses) {
             logDebug('Processing response kind:', response.kind);
 
             // Check if it's an error response
@@ -130,6 +178,55 @@ export async function searchUsers(query: string): Promise<VertexSearchResult[]> 
                     logDebug('Parse error:', err);
                 }
             }
+        }
+
+        // If we get here and have no results, try a fallback approach
+        logDebug('Fallback: Using hardcoded query to search for users starting with:', query);
+
+        // Fallback to using standard kinds to find users with names containing the query
+        try {
+            const userFilter = {
+                kinds: [0], // Metadata events
+                limit: 10
+            };
+
+            const userEvents = await ndk.fetchEvents(userFilter);
+            const eventsArray = Array.from(userEvents);
+            logDebug(`Found ${eventsArray.length} user events`);
+
+            const matchedUsers = eventsArray
+                .filter(event => {
+                    try {
+                        const profile = JSON.parse(event.content);
+                        return (
+                            profile.name &&
+                            profile.name.toLowerCase().includes(query.toLowerCase())
+                        );
+                    } catch (e) {
+                        return false;
+                    }
+                })
+                .map(event => {
+                    try {
+                        const profile = JSON.parse(event.content);
+                        return {
+                            pubkey: event.pubkey,
+                            rank: 1, // No ranking in fallback
+                            name: profile.name,
+                            picture: profile.picture
+                        };
+                    } catch (e) {
+                        return {
+                            pubkey: event.pubkey,
+                            rank: 1
+                        };
+                    }
+                });
+
+            logDebug('Fallback search found matches:', matchedUsers.length);
+            return matchedUsers;
+        } catch (fallbackErr) {
+            logDebug('Fallback search failed:', fallbackErr);
         }
 
         logDebug('No valid responses found, returning empty array');
@@ -187,4 +284,4 @@ export async function hexToNpub(hex: string): Promise<string | null> {
         logDebug('Conversion error:', error);
         return null;
     }
-} 
+}

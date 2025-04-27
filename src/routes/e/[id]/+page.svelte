@@ -220,10 +220,16 @@
               />
               
               <div>
-                <h3 class="text-lg font-medium text-gray-900">{entry.name || 'Unknown User'}</h3>
+                <h3 class="text-lg font-medium text-gray-900">{entry.name || 'Unknown User'}
+                  {#if entry.nip05}
+                    <a href={`https://${entry.nip05}`} class="text-xs text-gray-500 hover:text-gray-700 transition">
+                      {entry.nip05}
+                    </a>
+                  {/if}
+                </h3>
                 <button 
                   on:click={() => copyNpub(entry.pubkey)}
-                  class="text-sm text-gray-500 hover:text-gray-700 transition"
+                  class="text-xs text-gray-500 hover:text-gray-700 transition"
                 >
                   {#if copying === entry.pubkey}
                     <span class="text-green-600">Copied!</span>
@@ -231,6 +237,9 @@
                     {entry.pubkey.substring(0, 8)}...{entry.pubkey.substring(entry.pubkey.length - 8)}
                   {/if}
                 </button>
+                {#if entry.bio}
+                  <p class="text-sm font-normal text-gray-600 mt-1">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
+                {/if}
               </div>
             </div>
             

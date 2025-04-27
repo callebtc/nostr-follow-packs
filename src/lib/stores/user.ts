@@ -186,7 +186,7 @@ export async function loadUser(): Promise<void> {
 /**
  * Get profile data for a given public key
  */
-export async function getProfileByPubkey(pubkey: string): Promise<{ name?: string, picture?: string }> {
+export async function getProfileByPubkey(pubkey: string): Promise<{ name?: string, picture?: string, bio?: string, nip05?: string }> {
     // Check local cache first
     const cacheKey = PROFILE_CACHE_PREFIX + pubkey;
     const cachedProfile = localStorage.getItem(cacheKey);
@@ -211,8 +211,13 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
 
         const profile = {
             name: ndkUser.profile?.name,
-            picture: ndkUser.profile?.picture
+            picture: ndkUser.profile?.picture,
+            bio: ndkUser.profile?.about,
+            nip05: ndkUser.profile?.nip05
         };
+
+        // strip bio from all line breaks
+        profile.bio = profile.bio?.replace(/\n/g, ' ');
 
         // Cache the result
         localStorage.setItem(cacheKey, JSON.stringify({

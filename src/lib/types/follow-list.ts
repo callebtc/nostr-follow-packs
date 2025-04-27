@@ -8,6 +8,8 @@ export interface FollowListEntry {
     name?: string;
     picture?: string;
     npub?: string;
+    bio?: string;
+    nip05?: string;
 }
 
 export interface FollowList {

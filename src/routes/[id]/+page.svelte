@@ -12,6 +12,7 @@
   let error = false;
   let success = '';
   let copying = '';
+  let followingAll = false;
 
   onMount(async () => {
     try {
@@ -66,6 +67,40 @@
       }
     } catch (err) {
       console.error('Error following user:', err);
+    }
+  }
+
+  // Handle follow all button click
+  async function handleFollowAll() {
+    if (!$user || !followList || followingAll) return;
+    
+    followingAll = true;
+    let followedCount = 0;
+    
+    try {
+      for (const entry of followList.entries) {
+        // Skip already followed users
+        if (isFollowing(entry.pubkey)) continue;
+        
+        try {
+          const result = await followUser(entry.pubkey);
+          if (result) followedCount++;
+        } catch (err) {
+          console.error(`Error following ${entry.name || 'user'}:`, err);
+        }
+      }
+      
+      if (followedCount > 0) {
+        success = `You are now following ${followedCount} new user${followedCount === 1 ? '' : 's'} from this list`;
+        setTimeout(() => { success = ''; }, 5000);
+      } else {
+        success = 'You were already following all users in this list';
+        setTimeout(() => { success = ''; }, 3000);
+      }
+    } catch (err) {
+      console.error('Error in follow all:', err);
+    } finally {
+      followingAll = false;
     }
   }
 
@@ -133,6 +168,15 @@
         <div class="flex space-x-2">
           {#if isAuthor()}
             <button on:click={handleEdit} class="btn btn-primary">Edit List</button>
+          {/if}
+          {#if $user}
+            <button 
+              on:click={handleFollowAll} 
+              disabled={followingAll}
+              class="btn btn-primary {followingAll ? 'opacity-70' : ''}"
+            >
+              {followingAll ? 'Following...' : 'Follow All'}
+            </button>
           {/if}
           <a href="/" class="btn btn-secondary">Back to Home</a>
         </div>

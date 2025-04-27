@@ -192,8 +192,11 @@ export async function publishFollowList(
         //         logDebug(`Failed to publish to ${relayUrl}:`, err);
         //     }
         // }
-        await publishEvent(event);
-
+        const ok = await publishEvent(event);
+        if (!ok) {
+            logDebug('Failed to publish event');
+            return null;
+        }
         return event.id;
     } catch (error) {
         console.error('Error publishing follow list:', error);

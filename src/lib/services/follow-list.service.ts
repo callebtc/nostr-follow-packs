@@ -61,16 +61,28 @@ export async function getAuthorProfile(list: FollowList) {
     const authorProfile = await getProfileByPubkey(list.pubkey);
     list.authorName = authorProfile.name;
     list.authorPicture = authorProfile.picture;
+    return list;
 }
 
 export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined) {
     const entriesToLoad = maxEntries ? Math.min(list.entries.length, maxEntries) : list.entries.length;
     for (let i = 0; i < entriesToLoad; i++) {
-        const entry = list.entries[i];
-        const profile = await getProfileByPubkey(entry.pubkey);
-        entry.name = profile.name;
-        entry.picture = profile.picture;
+        try {
+            const entry = list.entries[i];
+            const profile = await getProfileByPubkey(entry.pubkey);
+            // Create a new entry object to trigger reactivity
+            const updatedEntry = { ...entry, name: profile.name, picture: profile.picture };
+            // Replace the entry in the array with the new object
+            list.entries[i] = updatedEntry;
+            // Force the component to update by replacing the entire list reference
+            list = { ...list, entries: [...list.entries] };
+            logDebug(`Updated profile for entry:`, { pubkey: entry.pubkey, name: profile.name });
+        } catch (err) {
+            console.error(`Error fetching profile for entry:`, err);
+            logDebug(`Error fetching profile for entry:`, err);
+        }
     }
+    return list;
 }
 
 /**
@@ -109,20 +121,7 @@ export async function getFollowListById(id: string): Promise<FollowList | null> 
                     logDebug('Error fetching author profile:', error);
                 }
 
-                // Get profile info for all entries
-                logDebug(`Loading profiles for ${list.entries.length} entries`);
-                for (const entry of list.entries) {
-                    try {
-                        const profile = await getProfileByPubkey(entry.pubkey);
-                        entry.name = profile.name;
-                        entry.picture = profile.picture;
-                        logDebug(`Loaded profile:`, { pubkey: entry.pubkey, name: profile.name });
-                    } catch (err) {
-                        console.error(`Error fetching profile for entry:`, err);
-                        logDebug(`Error fetching profile for entry:`, err);
-                    }
-                }
-
+                // We'll load profile info for entries separately to make it reactive
                 return list;
             }
         }

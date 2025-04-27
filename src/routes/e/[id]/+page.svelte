@@ -30,8 +30,13 @@
       }
       // Fetch profile information for each preview user in each list
       if (followList) {
-        await getAuthorProfile(followList);
-        await getProfileInfoForEntries(followList);
+        followList = await getAuthorProfile(followList);
+        // Load profile info reactively
+        getProfileInfoForEntries(followList).then(updatedList => {
+          if (updatedList) {
+            followList = updatedList;
+          }
+        });
       }
     } catch (err) {
       console.error('Error fetching follow list:', err);

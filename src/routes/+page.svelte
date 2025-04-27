@@ -48,9 +48,17 @@
   onMount(async () => {
     try {
       followLists = await loadFollowLists();
-      for (const list of followLists) {
-        await getAuthorProfile(list);
-        getProfileInfoForEntries(list, 5);
+      for (let i = 0; i < followLists.length; i++) {
+        followLists[i] = await getAuthorProfile(followLists[i]) || followLists[i];
+        // Update the list with profile info and trigger reactivity
+        getProfileInfoForEntries(followLists[i], 5).then(updatedList => {
+          if (updatedList) {
+            // Force update to specific index
+            followLists[i] = updatedList;
+            // Force reactivity by reassigning the array
+            followLists = [...followLists];
+          }
+        });
       }
     } catch (error) {
       console.error('Error fetching follow lists:', error);

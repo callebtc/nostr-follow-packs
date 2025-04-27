@@ -6,12 +6,20 @@
   import { goto } from '$app/navigation';
 
   let hasExtension = false;
+  let showUserMenu = false;
 
   onMount(async () => {
     hasExtension = await checkNip07Extension();
     if (hasExtension) {
       await loadUser();
     }
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (showUserMenu && !(e.target as HTMLElement).closest('.user-menu-container')) {
+        showUserMenu = false;
+      }
+    });
   });
 
   function handleLogin() {
@@ -20,6 +28,16 @@
       return;
     }
     loadUser();
+  }
+  
+  function toggleUserMenu(e: MouseEvent) {
+    e.stopPropagation();
+    showUserMenu = !showUserMenu;
+  }
+  
+  function navigateToSettings() {
+    showUserMenu = false;
+    goto('/settings');
   }
 </script>
 
@@ -34,13 +52,32 @@
       <a href="/" class="text-2xl font-bold text-purple-600">Nostr Follow List</a>
       <div>
         {#if $user}
-          <div class="flex items-center space-x-2">
-            <img 
-              src={$user.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-              alt={$user.name || 'User'} 
-              class="w-8 h-8 rounded-full"
-            />
-            <span class="font-medium">{$user.name || 'Anonymous'}</span>
+          <div class="relative user-menu-container">
+            <button 
+              on:click={toggleUserMenu}
+              class="flex items-center space-x-2 focus:outline-none"
+            >
+              <img 
+                src={$user.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                alt={$user.name || 'User'} 
+                class="w-8 h-8 rounded-full"
+              />
+              <span class="font-medium">{$user.name || 'Anonymous'}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            
+            {#if showUserMenu}
+              <div class="absolute right-0 mt-2 w-48 py-2 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                <button
+                  on:click={navigateToSettings}
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Settings
+                </button>
+              </div>
+            {/if}
           </div>
         {:else}
           <button on:click={handleLogin} class="btn btn-primary">

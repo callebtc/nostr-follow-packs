@@ -30,6 +30,7 @@
   let listId = '';
   let showDeleteConfirm = false;
   let deleting = false;
+  let loading = false;
   
   // Validation state
   let nameValid = true;
@@ -41,7 +42,13 @@
     if (editParam) {
       editMode = true;
       editId = editParam;
-      await loadExistingList(editParam);
+      logDebug('Loading existing list for editing:', editId);
+      loading = true;
+      try {
+        await loadExistingList(editParam);
+      } finally {
+        loading = false;
+      }
     }
   });
   
@@ -234,6 +241,10 @@
           You need to be logged in with a NIP-07 extension to create a follow list.
         </p>
         <a href="/" class="btn btn-primary">Back to Home</a>
+      </div>
+    {:else if editMode && loading}
+      <div class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     {:else}
       {#if error}

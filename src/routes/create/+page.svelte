@@ -138,6 +138,11 @@
       if (isValidNpub(searchQuery)) {
         // Convert npub to hex
         const pubkey = await npubToHex(searchQuery);
+
+        if (!pubkey) {
+          error = 'Invalid npub';
+          return;
+        }
         
         // Get profile
         const profile = await getProfileByPubkey(pubkey);
@@ -145,13 +150,14 @@
         // Create a single search result
         searchResults = [{
           pubkey,
+          rank: 0,
           name: profile.name || 'Unknown',
           picture: profile.picture || '',
-          bio: profile.about || ''
         }];
       } else {
+        // TODO: Implement search by username
         // Perform regular search
-        searchResults = await searchUsers(searchQuery);
+        // searchResults = await searchUsers(searchQuery);
       }
       
       logDebug(`Search returned ${searchResults.length} results`);
@@ -369,7 +375,7 @@
                 id="search"
                 bind:value={searchQuery}
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Enter username or npub"
+                placeholder="Enter npub"
                 on:keydown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -380,14 +386,15 @@
               <button
                 type="button"
                 on:click={handleSearch}
-                disabled={searching || searchQuery.length < 3}
+                disabled={searching || searchQuery.length < 3 || !isValidNpub(searchQuery)}
                 class="px-4 py-2 bg-purple-600 text-white rounded-r-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
               >
-                {searching ? 'Searching...' : 'Search'}
+                {searching ? 'Searching...' : 'Add User'}
               </button>
             </div>
             <p class="mt-1 text-xs text-gray-500">
-              Search by username or paste a nostr npub (starting with npub1...)
+              <!-- Search by username or paste a nostr npub (starting with npub1...) -->
+               Paste nostr npub to add users to your list
             </p>
             
             {#if error}

@@ -45,7 +45,7 @@
   // Handle edit button click
   function handleEdit() {
     if (!followList) return;
-    goto(`/create?edit=${followList.id}`);
+    goto(`/create?edit=${followList.eventId}`);
   }
 
   // Check if the current user is following a specific pubkey

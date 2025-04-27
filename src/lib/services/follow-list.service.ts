@@ -152,7 +152,8 @@ export async function getFollowListById(id: string): Promise<FollowList | null> 
 export async function publishFollowList(
     name: string,
     coverImageUrl: string,
-    entries: FollowListEntry[]
+    entries: FollowListEntry[],
+    id: string | undefined
 ): Promise<string | null> {
     logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length });
 
@@ -161,8 +162,14 @@ export async function publishFollowList(
         const signerNdk = await getNdkWithSigner();
         logDebug('Got signer NDK instance');
 
+        // if id is not set, generate a new one
+        if (!id) {
+            id = crypto.randomUUID();
+        }
+
         // Create the follow list event
         const followList = {
+            id,
             name,
             coverImageUrl,
             pubkey: '', // Will be set by the signer

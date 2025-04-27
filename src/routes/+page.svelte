@@ -63,7 +63,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {#each followLists as list}
           <a 
-            href="/{list.id}" 
+            href="/e/{list.eventId}" 
             class="bg-white rounded-lg shadow-sm overflow-hidden transition-transform hover:scale-[1.02]"
           >
             <!-- Cover image -->

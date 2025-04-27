@@ -1,7 +1,7 @@
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 // The constant for our custom follow list event kind (replaceable)
-export const FOLLOW_LIST_KIND = 19089;
+export const FOLLOW_LIST_KIND = 39089;
 
 export interface FollowListEntry {
     pubkey: string;
@@ -12,6 +12,7 @@ export interface FollowListEntry {
 
 export interface FollowList {
     id: string;
+    eventId: string;
     name: string;
     coverImageUrl: string;
     pubkey: string;
@@ -26,9 +27,13 @@ export interface FollowList {
  */
 export function parseFollowListEvent(event: NDKEvent): FollowList | null {
     try {
-        // Get the name from the d tag
+        // Get the name from the n tag
+        const nTag = event.tags.find(tag => tag[0] === 'n');
+        const name = nTag && nTag[1] ? nTag[1] : 'Untitled Follow List';
+
+        // Get the id from the d tag
         const dTag = event.tags.find(tag => tag[0] === 'd');
-        const name = dTag && dTag[1] ? dTag[1] : 'Untitled Follow List';
+        const id = dTag && dTag[1] ? dTag[1] : event.id;
 
         // Get the cover image from the image tag
         const imageTag = event.tags.find(tag => tag[0] === 'image');
@@ -46,7 +51,8 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
         }
 
         return {
-            id: event.id,
+            id,
+            eventId: event.id,
             name,
             coverImageUrl,
             pubkey: event.pubkey,
@@ -62,14 +68,16 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
 /**
  * Create a follow list event from a FollowList object
  */
-export function createFollowListEvent(followList: Omit<FollowList, 'id' | 'createdAt' | 'authorName' | 'authorPicture'>): NDKEvent {
+export function createFollowListEvent(followList: Omit<FollowList, 'eventId' | 'createdAt' | 'authorName' | 'authorPicture'>): NDKEvent {
     const event = new NDKEvent();
 
     // Set the kind
     event.kind = FOLLOW_LIST_KIND;
 
     // Add the tags
-    event.tags.push(['d', followList.name]);
+    event.tags.push(['n', followList.name]);
+    event.tags.push(['d', followList.id]);
+
     if (followList.coverImageUrl) {
         event.tags.push(['image', followList.coverImageUrl]);
     }

@@ -26,6 +26,7 @@
   let error = '';
   let editMode = false;
   let editId = '';
+  let listId = '';
   
   // Validation state
   let nameValid = true;
@@ -61,6 +62,7 @@
       // Load the list data into the form
       name = list.name;
       coverImageUrl = list.coverImageUrl;
+      listId = list.id;
       selectedEntries = [...list.entries];
       
       logDebug('Loaded existing list for editing:', { id, name, entries: selectedEntries.length });
@@ -182,13 +184,13 @@
     
     try {
       // Publish the follow list (same method for create and edit)
-      const id = await publishFollowList(name, coverImageUrl, selectedEntries);
+      const id = await publishFollowList(name, coverImageUrl, selectedEntries, editMode ? listId : undefined);
       logDebug('Published with ID:', id);
       
       if (id) {
         // Navigate to the new follow list
         logDebug('Redirecting to follow list page');
-        goto(`/${id}`);
+        goto(`/e/${id}`);
       } else {
         error = 'Failed to publish follow list. Please try again.';
         logDebug('Publish failed - no ID returned');

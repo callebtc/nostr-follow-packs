@@ -9,6 +9,7 @@ export interface UserProfile {
     about?: string;
     npub?: string;
     following: Set<string>;
+    relays: Set<string>;
 }
 
 export const user = writable<UserProfile | null>(null);
@@ -65,7 +66,8 @@ export async function loadUser(): Promise<void> {
             picture: ndkUser.profile?.picture,
             about: ndkUser.profile?.about,
             npub: ndkUser.npub,
-            following: new Set<string>()
+            following: new Set<string>(),
+            relays: new Set<string>(DEFAULT_RELAYS)
         };
 
         // Get the user's follow list (NIP-02)
@@ -81,6 +83,14 @@ export async function loadUser(): Promise<void> {
             }
         }
 
+        // Get the user's kind 10002 relays and add them to the list of relays
+        const relaysFilter = { kinds: [NDKKind.RelayList], authors: [pubkey] };
+        const relaysEvents = await ndk.fetchEvents(relaysFilter);
+        for (const event of relaysEvents) {
+            if (event.tags.length > 0) {
+                userProfile.relays.add(event.tags[0][1]);
+            }
+        }
         // Save the user profile to the store and cache
         user.set(userProfile);
 

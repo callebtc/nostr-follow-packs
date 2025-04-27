@@ -11,39 +11,59 @@ import type {
 } from '$lib/types/follow-list';
 import { getProfileByPubkey } from '$lib/stores/user';
 
+// Debug logging configuration
+const DEBUG = true;
+const logDebug = (...args: any[]) => {
+    if (DEBUG) console.log('[Follow List Service]', ...args);
+};
+
 /**
  * Get a list of the most recent follow lists from relays
  */
 export async function getFollowLists(limit: number = 20): Promise<FollowList[]> {
+    logDebug('Fetching follow lists, limit:', limit);
+
     try {
         // Fetch follow list events from relays
         const filter = { kinds: [FOLLOW_LIST_KIND], limit };
+        logDebug('Fetching with filter:', filter);
+
         const events = await ndk.fetchEvents(filter);
+        const eventsArray = Array.from(events);
+        logDebug(`Fetched ${eventsArray.length} events`);
 
         // Convert events to FollowList objects
         const followLists: FollowList[] = [];
-        for (const event of events) {
+        for (const event of eventsArray) {
             const list = parseFollowListEvent(event);
             if (list) {
+                logDebug('Parsed list:', { id: list.id, name: list.name, entries: list.entries.length });
+
                 // Try to get the author's profile info
                 try {
                     const authorProfile = await getProfileByPubkey(event.pubkey);
                     list.authorName = authorProfile.name;
                     list.authorPicture = authorProfile.picture;
+                    logDebug('Added author info:', { name: authorProfile.name });
                 } catch (error) {
                     console.error('Error fetching author profile:', error);
+                    logDebug('Error fetching author profile:', error);
                 }
 
                 // Try to get profile info for the first few entries
                 const entriesToLoad = Math.min(list.entries.length, 5);
+                logDebug(`Loading profiles for first ${entriesToLoad} entries`);
+
                 for (let i = 0; i < entriesToLoad; i++) {
                     try {
                         const entry = list.entries[i];
                         const profile = await getProfileByPubkey(entry.pubkey);
                         entry.name = profile.name;
                         entry.picture = profile.picture;
+                        logDebug(`Loaded profile for entry ${i}:`, { name: profile.name });
                     } catch (err) {
                         console.error(`Error fetching profile for entry ${i}:`, err);
+                        logDebug(`Error fetching profile for entry ${i}:`, err);
                     }
                 }
 
@@ -52,9 +72,13 @@ export async function getFollowLists(limit: number = 20): Promise<FollowList[]> 
         }
 
         // Sort by created_at (newest first)
-        return followLists.sort((a, b) => b.createdAt - a.createdAt);
+        const sortedLists = followLists.sort((a, b) => b.createdAt - a.createdAt);
+        logDebug(`Returning ${sortedLists.length} follow lists`);
+
+        return sortedLists;
     } catch (error) {
         console.error('Error fetching follow lists:', error);
+        logDebug('Error fetching follow lists:', error);
         return [];
     }
 }
@@ -63,32 +87,49 @@ export async function getFollowLists(limit: number = 20): Promise<FollowList[]> 
  * Get a single follow list by its event ID
  */
 export async function getFollowListById(id: string): Promise<FollowList | null> {
+    logDebug('Fetching follow list by ID:', id);
+
     try {
         // Fetch the specific event by ID
         const filter = { ids: [id] };
+        logDebug('Fetching with filter:', filter);
+
         const events = await ndk.fetchEvents(filter);
+        const eventsArray = Array.from(events);
+        logDebug(`Fetched ${eventsArray.length} events`);
 
         // Find the event
-        for (const event of events) {
+        for (const event of eventsArray) {
             const list = parseFollowListEvent(event);
             if (list) {
+                logDebug('Parsed list:', {
+                    id: list.id,
+                    name: list.name,
+                    entries: list.entries.length
+                });
+
                 // Get the author's profile
                 try {
                     const authorProfile = await getProfileByPubkey(event.pubkey);
                     list.authorName = authorProfile.name;
                     list.authorPicture = authorProfile.picture;
+                    logDebug('Added author info:', { name: authorProfile.name });
                 } catch (error) {
                     console.error('Error fetching author profile:', error);
+                    logDebug('Error fetching author profile:', error);
                 }
 
                 // Get profile info for all entries
+                logDebug(`Loading profiles for ${list.entries.length} entries`);
                 for (const entry of list.entries) {
                     try {
                         const profile = await getProfileByPubkey(entry.pubkey);
                         entry.name = profile.name;
                         entry.picture = profile.picture;
+                        logDebug(`Loaded profile:`, { pubkey: entry.pubkey, name: profile.name });
                     } catch (err) {
                         console.error(`Error fetching profile for entry:`, err);
+                        logDebug(`Error fetching profile for entry:`, err);
                     }
                 }
 
@@ -96,9 +137,11 @@ export async function getFollowListById(id: string): Promise<FollowList | null> 
             }
         }
 
+        logDebug('No follow list found with ID:', id);
         return null;
     } catch (error) {
         console.error('Error fetching follow list by ID:', error);
+        logDebug('Error fetching follow list by ID:', error);
         return null;
     }
 }
@@ -111,9 +154,12 @@ export async function publishFollowList(
     coverImageUrl: string,
     entries: FollowListEntry[]
 ): Promise<string | null> {
+    logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length });
+
     try {
         // Make sure we have a signer
         const signerNdk = await getNdkWithSigner();
+        logDebug('Got signer NDK instance');
 
         // Create the follow list event
         const followList = {
@@ -124,14 +170,19 @@ export async function publishFollowList(
         };
 
         const event = createFollowListEvent(followList);
+        logDebug('Created event:', { kind: event.kind, tags: event.tags.length });
 
         // Sign and publish the event
         await event.sign();
+        logDebug('Signed event with ID:', event.id);
+
         await event.publish();
+        logDebug('Published event successfully');
 
         return event.id;
     } catch (error) {
         console.error('Error publishing follow list:', error);
+        logDebug('Error publishing follow list:', error);
         return null;
     }
 } 

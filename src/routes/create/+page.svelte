@@ -4,8 +4,15 @@
   import { user } from '$lib/stores/user';
   import { searchUsers, npubToHex, isValidNpub } from '$lib/services/vertex-search';
   import { publishFollowList } from '$lib/services/follow-list.service';
+  import { getProfileByPubkey } from '$lib/stores/user';
   import type { VertexSearchResult } from '$lib/services/vertex-search';
   import type { FollowListEntry } from '$lib/types/follow-list';
+
+  // Debug logging
+  const DEBUG = true;
+  const logDebug = (...args: any[]) => {
+    if (DEBUG) console.log('[Create Page]', ...args);
+  };
 
   // Form state
   let name = '';
@@ -24,36 +31,71 @@
   // Handle user search
   async function handleSearch() {
     if (!searchQuery || searchQuery.length < 3) return;
+    
+    logDebug('Searching for:', searchQuery);
     searching = true;
     searchResults = [];
+    error = '';
     
     try {
       // Check if the input is an npub
       if (isValidNpub(searchQuery)) {
+        logDebug('Input is an npub, converting to hex');
         const hexPubkey = await npubToHex(searchQuery);
+        
         if (hexPubkey) {
-          searchResults = [{
-            pubkey: hexPubkey,
-            rank: 1
-          }];
+          logDebug('Converted npub to hex:', hexPubkey);
+          
+          // Fetch profile data
+          try {
+            logDebug('Fetching profile for npub');
+            const profile = await getProfileByPubkey(hexPubkey);
+            logDebug('Fetched profile:', profile);
+            
+            searchResults = [{
+              pubkey: hexPubkey,
+              rank: 1,
+              name: profile.name,
+              picture: profile.picture
+            }];
+          } catch (profileErr) {
+            logDebug('Error fetching profile for npub:', profileErr);
+            // Still add the result even without profile
+            searchResults = [{
+              pubkey: hexPubkey,
+              rank: 1
+            }];
+          }
+        } else {
+          logDebug('Failed to convert npub');
+          error = 'Invalid npub format';
         }
       } else {
         // Search by username using Vertex
+        logDebug('Searching by username with Vertex');
         searchResults = await searchUsers(searchQuery);
+        logDebug('Search results:', searchResults);
       }
     } catch (err) {
       console.error('Search error:', err);
+      logDebug('Search error:', err);
+      error = `Search error: ${err.message || 'Unknown error'}`;
     } finally {
       searching = false;
     }
+    
+    logDebug('Final search results:', searchResults);
   }
   
   // Add a search result to the selected entries
   function addEntry(result: VertexSearchResult) {
     // Check if already added
     if (selectedEntries.some(entry => entry.pubkey === result.pubkey)) {
+      logDebug('Entry already in list:', result.pubkey);
       return;
     }
+    
+    logDebug('Adding entry to list:', result);
     
     // Add to selections
     selectedEntries = [
@@ -81,27 +123,37 @@
     nameValid = !!name.trim();
     entriesValid = selectedEntries.length > 0;
     
+    logDebug('Form submission - validation:', { nameValid, entriesValid });
+    
     // Check validation
     if (!nameValid || !entriesValid) {
       error = 'Please fix the validation errors and try again.';
+      logDebug('Validation failed:', error);
       return;
     }
     
     submitting = true;
     error = '';
     
+    logDebug('Publishing follow list:', { name, entries: selectedEntries.length });
+    
     try {
       // Publish the follow list
       const id = await publishFollowList(name, coverImageUrl, selectedEntries);
+      logDebug('Published with ID:', id);
+      
       if (id) {
         // Navigate to the new follow list
+        logDebug('Redirecting to new follow list page');
         goto(`/${id}`);
       } else {
         error = 'Failed to publish follow list. Please try again.';
+        logDebug('Publish failed - no ID returned');
       }
     } catch (err) {
       console.error('Error publishing follow list:', err);
-      error = 'An error occurred while publishing your follow list.';
+      logDebug('Publish error:', err);
+      error = `Error publishing: ${err.message || 'An unknown error occurred'}`;
     } finally {
       submitting = false;
     }
@@ -211,6 +263,10 @@
             <p class="mt-1 text-xs text-gray-500">
               Search by username or paste a nostr npub (starting with npub1...)
             </p>
+            
+            {#if error}
+              <p class="mt-2 text-sm text-red-600">{error}</p>
+            {/if}
           </div>
           
           <!-- Search results -->

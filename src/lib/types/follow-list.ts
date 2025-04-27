@@ -36,20 +36,8 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
 
         // Parse the content (JSON with keys array)
         let entries: FollowListEntry[] = [];
-        if (event.content) {
-            try {
-                const contentData = JSON.parse(event.content);
-                if (contentData.keys && Array.isArray(contentData.keys)) {
-                    entries = contentData.keys.map((pubkey: string) => ({
-                        pubkey,
-                    }));
-                }
-            } catch (e) {
-                console.error('Failed to parse follow list content JSON:', e);
-            }
-        }
 
-        // Also check for p tags (alternative format)
+        // Get the entries from the p tags
         const pTags = event.tags.filter(tag => tag[0] === 'p');
         if (pTags.length > 0 && entries.length === 0) {
             entries = pTags.map(tag => ({
@@ -89,11 +77,6 @@ export function createFollowListEvent(followList: Omit<FollowList, 'id' | 'creat
     // Add each pubkey as a p tag for discoverability
     followList.entries.forEach(entry => {
         event.tags.push(['p', entry.pubkey]);
-    });
-
-    // Set the content to the JSON with keys
-    event.content = JSON.stringify({
-        keys: followList.entries.map(entry => entry.pubkey),
     });
 
     return event;

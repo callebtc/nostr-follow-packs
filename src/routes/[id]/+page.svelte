@@ -37,6 +37,7 @@
   // Check if the current user is following a specific pubkey
   function isFollowing(pubkey: string): boolean {
     if (!$user) return false;
+    if (!$user.following || typeof $user.following.has !== 'function') return false;
     return $user.following.has(pubkey);
   }
 

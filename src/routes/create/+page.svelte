@@ -249,7 +249,12 @@
                 bind:value={searchQuery}
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
                 placeholder="Enter username or npub"
-                on:keydown={e => e.key === 'Enter' && handleSearch()}
+                on:keydown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
               />
               <button
                 type="button"

@@ -18,6 +18,7 @@
   // Form state
   let name = '';
   let coverImageUrl = '';
+  let description = '';
   let searchQuery = '';
   let searching = false;
   let searchResults: VertexSearchResult[] = [];
@@ -64,7 +65,7 @@
         error = 'Failed to delete follow list';
         showDeleteConfirm = false;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting follow list:', err);
       error = `Error deleting: ${err.message || 'An unknown error occurred'}`;
       showDeleteConfirm = false;
@@ -98,11 +99,12 @@
       // Load the list data into the form
       name = list.name;
       coverImageUrl = list.coverImageUrl;
+      description = list.description || '';
       listId = list.id;
       selectedEntries = [...list.entries];
       
       logDebug('Loaded existing list for editing:', { id, name, entries: selectedEntries.length });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading follow list for editing:', err);
       error = `Error loading list: ${err.message || 'Unknown error'}`;
       editMode = false;
@@ -111,61 +113,38 @@
   
   // Handle user search
   async function handleSearch() {
-    if (!searchQuery || searchQuery.length < 3) return;
+    if (!searchQuery.trim()) return;
     
-    logDebug('Searching for:', searchQuery);
     searching = true;
     searchResults = [];
-    error = '';
     
     try {
-      // Check if the input is an npub
       if (isValidNpub(searchQuery)) {
-        logDebug('Input is an npub, converting to hex');
-        const hexPubkey = await npubToHex(searchQuery);
+        // Convert npub to hex
+        const pubkey = await npubToHex(searchQuery);
         
-        if (hexPubkey) {
-          logDebug('Converted npub to hex:', hexPubkey);
-          
-          // Fetch profile data
-          try {
-            logDebug('Fetching profile for npub');
-            const profile = await getProfileByPubkey(hexPubkey);
-            logDebug('Fetched profile:', profile);
-            
-            searchResults = [{
-              pubkey: hexPubkey,
-              rank: 1,
-              name: profile.name,
-              picture: profile.picture
-            }];
-          } catch (profileErr) {
-            logDebug('Error fetching profile for npub:', profileErr);
-            // Still add the result even without profile
-            searchResults = [{
-              pubkey: hexPubkey,
-              rank: 1
-            }];
-          }
-        } else {
-          logDebug('Failed to convert npub');
-          error = 'Invalid npub format';
-        }
+        // Get profile
+        const profile = await getProfileByPubkey(pubkey);
+        
+        // Create a single search result
+        searchResults = [{
+          pubkey,
+          name: profile.name || 'Unknown',
+          picture: profile.picture || '',
+          bio: profile.about || ''
+        }];
       } else {
-        // Search by username using Vertex
-        logDebug('Searching by username with Vertex');
+        // Perform regular search
         searchResults = await searchUsers(searchQuery);
-        logDebug('Search results:', searchResults);
       }
-    } catch (err) {
-      console.error('Search error:', err);
-      logDebug('Search error:', err);
-      error = `Search error: ${err.message || 'Unknown error'}`;
+      
+      logDebug(`Search returned ${searchResults.length} results`);
+    } catch (err: any) {
+      console.error('Error searching:', err);
+      error = `Search error: ${err.message || 'An unknown error occurred'}`;
     } finally {
       searching = false;
     }
-    
-    logDebug('Final search results:', searchResults);
   }
   
   // Add a search result to the selected entries
@@ -216,11 +195,11 @@
     submitting = true;
     error = '';
     
-    logDebug('Publishing follow list:', { name, entries: selectedEntries.length, editMode });
+    logDebug('Publishing follow list:', { name, description, entries: selectedEntries.length, editMode });
     
     try {
       // Publish the follow list (same method for create and edit)
-      const id = await publishFollowList(name, coverImageUrl, selectedEntries, editMode ? listId : undefined);
+      const id = await publishFollowList(name, coverImageUrl, selectedEntries, editMode ? listId : undefined, description);
       logDebug('Published with ID:', id);
       
       if (id) {
@@ -231,7 +210,7 @@
         error = 'Failed to publish follow list. Please try again.';
         logDebug('Publish failed - no ID returned');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error publishing follow list:', err);
       logDebug('Publish error:', err);
       error = `Error publishing: ${err.message || 'An unknown error occurred'}`;
@@ -326,6 +305,19 @@
               placeholder="https://example.com/image.jpg"
             />
             <p class="mt-1 text-xs text-gray-500">Optional: URL to an image that represents this list</p>
+          </div>
+          
+          <!-- Description field -->
+          <div class="mb-6">
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
+              bind:value={description}
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+              placeholder="Enter a description for this follow list"
+            ></textarea>
           </div>
           
           {#if coverImageUrl}

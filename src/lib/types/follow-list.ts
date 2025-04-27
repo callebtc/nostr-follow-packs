@@ -20,6 +20,7 @@ export interface FollowList {
     createdAt: number;
     authorName?: string;
     authorPicture?: string;
+    description?: string;
 }
 
 /**
@@ -38,6 +39,15 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
         // Get the cover image from the image tag
         const imageTag = event.tags.find(tag => tag[0] === 'image');
         const coverImageUrl = imageTag && imageTag[1] ? imageTag[1] : '';
+
+        // Parse the content (JSON with description)
+        let description;
+        try {
+            const content = JSON.parse(event.content);
+            description = content.description;
+        } catch (e) {
+            description = '';
+        }
 
         // Parse the content (JSON with keys array)
         let entries: FollowListEntry[] = [];
@@ -58,6 +68,7 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
             pubkey: event.pubkey,
             entries,
             createdAt: event.created_at || 0,
+            description,
         };
     } catch (error) {
         console.error('Error parsing follow list event:', error);
@@ -85,6 +96,11 @@ export function createFollowListEvent(followList: Omit<FollowList, 'eventId' | '
     // Add each pubkey as a p tag for discoverability
     followList.entries.forEach(entry => {
         event.tags.push(['p', entry.pubkey]);
+    });
+
+    // Set the content with the description
+    event.content = JSON.stringify({
+        description: followList.description || ''
     });
 
     // Add the created at tag to current timestamp

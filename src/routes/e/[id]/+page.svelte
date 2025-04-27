@@ -205,6 +205,13 @@
       </div>
     {/if}
     
+    <!-- Description -->
+    {#if followList.description}
+      <div class="mb-6 bg-white rounded-lg shadow-sm p-4 sm:p-6">
+        <p class="text-gray-700">{followList.description}</p>
+      </div>
+    {/if}
+    
     <!-- User list -->
     <div class="bg-white rounded-lg shadow-sm overflow-hidden">
       <ul class="divide-y divide-gray-200">

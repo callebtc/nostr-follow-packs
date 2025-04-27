@@ -153,9 +153,10 @@ export async function publishFollowList(
     name: string,
     coverImageUrl: string,
     entries: FollowListEntry[],
-    id: string | undefined
+    id: string | undefined,
+    description?: string
 ): Promise<string | null> {
-    logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length });
+    logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length, description });
 
     try {
         // Make sure we have a signer
@@ -173,7 +174,8 @@ export async function publishFollowList(
             name,
             coverImageUrl,
             pubkey: '', // Will be set by the signer
-            entries
+            entries,
+            description
         };
 
         const event = createFollowListEvent(followList);

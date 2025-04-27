@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { user, followUser, getProfileByPubkey } from '$lib/stores/user';
-  import { getFollowListById } from '$lib/services/follow-list.service';
+  import { user, followUser } from '$lib/stores/user';
+  import { getFollowListById, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
   import { hexToNpub } from '$lib/services/vertex-search';
   import { goto } from '$app/navigation';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
@@ -30,18 +30,8 @@
       }
       // Fetch profile information for each preview user in each list
       if (followList) {
-        const previewEntries = followList.entries.slice(0, 5);
-        for (const entry of previewEntries) {
-          try {
-            if (!entry.name || !entry.picture) {
-              const profile = await getProfileByPubkey(entry.pubkey);
-              entry.name = profile.name;
-              entry.picture = profile.picture;
-            }
-          } catch (error) {
-            console.error(`Error fetching profile for ${entry.pubkey}:`, error);
-          }
-        }
+        await getAuthorProfile(followList);
+        await getProfileInfoForEntries(followList);
       }
     } catch (err) {
       console.error('Error fetching follow list:', err);

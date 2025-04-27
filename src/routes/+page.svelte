@@ -2,8 +2,7 @@
   import { onMount } from 'svelte';
   import { user } from '$lib/stores/user';
   import { goto } from '$app/navigation';
-  import { getFollowLists, LIST_LIMIT } from '$lib/services/follow-list.service';
-  import { getProfileByPubkey } from '$lib/stores/user';
+  import { getFollowLists, LIST_LIMIT, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
   import type { FollowList } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
 
@@ -18,22 +17,6 @@
       
       // Determine if we might have more lists
       hasMoreLists = lists.length >= LIST_LIMIT;
-      
-      // Fetch profile information for each preview user in each list
-      for (const list of lists) {
-        const previewEntries = list.entries.slice(0, 5);
-        for (const entry of previewEntries) {
-          try {
-            if (!entry.name || !entry.picture) {
-              const profile = await getProfileByPubkey(entry.pubkey);
-              entry.name = profile.name;
-              entry.picture = profile.picture;
-            }
-          } catch (error) {
-            console.error(`Error fetching profile for ${entry.pubkey}:`, error);
-          }
-        }
-      }
       
       return lists;
     } catch (error) {
@@ -65,6 +48,10 @@
   onMount(async () => {
     try {
       followLists = await loadFollowLists();
+      for (const list of followLists) {
+        await getAuthorProfile(list);
+        getProfileInfoForEntries(list, 5);
+      }
     } catch (error) {
       console.error('Error fetching follow lists:', error);
     } finally {

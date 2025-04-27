@@ -193,13 +193,16 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
 
     // If we have a cached profile and it's less than 24 hours old, use it
     if (cachedProfile) {
+        logDebug('Using cached profile for', pubkey);
         const { data, timestamp } = JSON.parse(cachedProfile);
-        const hasNameAndPicture = data.name && data.picture;
+        const hasNameAndPicture = data.name || data.picture;
         const oneDay = 24 * 60 * 60 * 1000;
         if (Date.now() - timestamp < oneDay && hasNameAndPicture) {
             return data;
         }
     }
+
+    logDebug('Getting profile for', pubkey);
 
     // If no valid cache, fetch from relays
     try {

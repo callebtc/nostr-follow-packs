@@ -41,35 +41,6 @@ export async function getFollowLists(limit: number = LIST_LIMIT, since?: number,
             const list = parseFollowListEvent(event);
             if (list) {
                 logDebug('Parsed list:', { id: list.id, name: list.name, entries: list.entries.length });
-
-                // Try to get the author's profile info
-                try {
-                    const authorProfile = await getProfileByPubkey(event.pubkey);
-                    list.authorName = authorProfile.name;
-                    list.authorPicture = authorProfile.picture;
-                    logDebug('Added author info:', { name: authorProfile.name });
-                } catch (error) {
-                    console.error('Error fetching author profile:', error);
-                    logDebug('Error fetching author profile:', error);
-                }
-
-                // Try to get profile info for the first few entries
-                const entriesToLoad = Math.min(list.entries.length, 5);
-                logDebug(`Loading profiles for first ${entriesToLoad} entries`);
-
-                for (let i = 0; i < entriesToLoad; i++) {
-                    try {
-                        const entry = list.entries[i];
-                        const profile = await getProfileByPubkey(entry.pubkey);
-                        entry.name = profile.name;
-                        entry.picture = profile.picture;
-                        logDebug(`Loaded profile for entry ${i}:`, { name: profile.name });
-                    } catch (err) {
-                        console.error(`Error fetching profile for entry ${i}:`, err);
-                        logDebug(`Error fetching profile for entry ${i}:`, err);
-                    }
-                }
-
                 followLists.push(list);
             }
         }
@@ -83,6 +54,22 @@ export async function getFollowLists(limit: number = LIST_LIMIT, since?: number,
         console.error('Error fetching follow lists:', error);
         logDebug('Error fetching follow lists:', error);
         return [];
+    }
+}
+
+export async function getAuthorProfile(list: FollowList) {
+    const authorProfile = await getProfileByPubkey(list.pubkey);
+    list.authorName = authorProfile.name;
+    list.authorPicture = authorProfile.picture;
+}
+
+export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined) {
+    const entriesToLoad = maxEntries ? Math.min(list.entries.length, maxEntries) : list.entries.length;
+    for (let i = 0; i < entriesToLoad; i++) {
+        const entry = list.entries[i];
+        const profile = await getProfileByPubkey(entry.pubkey);
+        entry.name = profile.name;
+        entry.picture = profile.picture;
     }
 }
 

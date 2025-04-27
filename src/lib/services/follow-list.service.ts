@@ -1,4 +1,4 @@
-import { ndk, getNdkWithSigner, DEFAULT_RELAYS } from '$lib/nostr/ndk';
+import { ndk, getNdkWithSigner, DEFAULT_RELAYS, publishEvent } from '$lib/nostr/ndk';
 import { NDKEvent } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
@@ -12,6 +12,8 @@ import type {
 import { getProfileByPubkey, user } from '$lib/stores/user';
 import { get } from 'svelte/store';
 
+export const LIST_LIMIT = 20;
+
 // Debug logging configuration
 const DEBUG = true;
 const logDebug = (...args: any[]) => {
@@ -21,12 +23,12 @@ const logDebug = (...args: any[]) => {
 /**
  * Get a list of the most recent follow lists from relays
  */
-export async function getFollowLists(limit: number = 20): Promise<FollowList[]> {
+export async function getFollowLists(limit: number = LIST_LIMIT, since?: number, until?: number): Promise<FollowList[]> {
     logDebug('Fetching follow lists, limit:', limit);
 
     try {
         // Fetch follow list events from relays
-        const filter = { kinds: [FOLLOW_LIST_KIND], limit };
+        const filter = { kinds: [FOLLOW_LIST_KIND], limit, since, until };
         logDebug('Fetching with filter:', filter);
 
         const events = await ndk.fetchEvents(filter);
@@ -195,16 +197,17 @@ export async function publishFollowList(
         // logDebug('Published event successfully');
 
         // Publish to each relay individually
-        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
-        for (const relayUrl of allRelays) {
-            try {
-                const relay = await signerNdk.pool.getRelay(relayUrl);
-                await relay.publish(event);
-                logDebug(`Published to ${relayUrl}`);
-            } catch (err) {
-                logDebug(`Failed to publish to ${relayUrl}:`, err);
-            }
-        }
+        // const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
+        // for (const relayUrl of allRelays) {
+        //     try {
+        //         const relay = await signerNdk.pool.getRelay(relayUrl);
+        //         await relay.publish(event);
+        //         logDebug(`Published to ${relayUrl}`);
+        //     } catch (err) {
+        //         logDebug(`Failed to publish to ${relayUrl}:`, err);
+        //     }
+        // }
+        await publishEvent(event);
 
         return event.id;
     } catch (error) {
@@ -253,17 +256,7 @@ export async function deleteFollowList(id: string, eventId: string): Promise<boo
         await event.sign();
         logDebug('Signed deletion event with ID:', event.id);
 
-        // Publish to each relay individually
-        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
-        for (const relayUrl of allRelays) {
-            try {
-                const relay = await signerNdk.pool.getRelay(relayUrl);
-                await relay.publish(event);
-                logDebug(`Published deletion request to ${relayUrl}`);
-            } catch (err) {
-                logDebug(`Failed to publish deletion request to ${relayUrl}:`, err);
-            }
-        }
+        await publishEvent(event);
 
         return true;
     } catch (error) {

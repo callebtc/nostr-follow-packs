@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
 import NDK, { NDKEvent, NDKUser, NDKKind } from '@nostr-dev-kit/ndk';
-import { DEFAULT_RELAYS, getNdkWithSigner, ndk } from '$lib/nostr/ndk';
+import { DEFAULT_RELAYS, getNdkWithSigner, ndk, publishEvent } from '$lib/nostr/ndk';
 
 export interface UserProfile {
     pubkey: string;
@@ -167,6 +167,9 @@ export async function loadUser(): Promise<void> {
         // Save the user profile to the store and cache
         user.set(userProfile);
 
+        // update the global ndk instance with the new relays
+        ndk.explicitRelayUrls = Array.from(userProfile.relays);
+
         // Stringify with custom replacer for Set
         localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userProfile, (key, value) => {
             if (value instanceof Set) {
@@ -255,17 +258,7 @@ export async function followUser(pubkeyToFollow: string): Promise<boolean> {
         // Sign with the extension
         await event.sign();
 
-        // Publish to currentUser.relays + DEFAULT_RELAYS
-        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
-        for (const relayUrl of allRelays) {
-            try {
-                const relay = await signerNdk.pool.getRelay(relayUrl);
-                await relay.publish(event);
-                logDebug(`Published to ${relayUrl}`);
-            } catch (err) {
-                logDebug(`Failed to publish to ${relayUrl}:`, err);
-            }
-        }
+        await publishEvent(event);
 
         // Save a snapshot of the follow list
         saveFollowSnapshot(event, pubkeys);
@@ -312,16 +305,17 @@ export async function restoreFollowSnapshot(snapshot: FollowSnapshot): Promise<b
         await event.sign();
 
         // Publish to each relay individually
-        const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
-        for (const relayUrl of allRelays) {
-            try {
-                const relay = await signerNdk.pool.getRelay(relayUrl);
-                await relay.publish(event);
-                logDebug(`Published to ${relayUrl}`);
-            } catch (err) {
-                logDebug(`Failed to publish to ${relayUrl}:`, err);
-            }
-        }
+        // const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
+        // for (const relayUrl of allRelays) {
+        //     try {
+        //         const relay = await signerNdk.pool.getRelay(relayUrl);
+        //         await relay.publish(event);
+        //         logDebug(`Published to ${relayUrl}`);
+        //     } catch (err) {
+        //         logDebug(`Failed to publish to ${relayUrl}:`, err);
+        //     }
+        // }
+        await publishEvent(event);
 
         // Update the user's following set
         currentUser.following = new Set<string>(snapshot.pubkeys);

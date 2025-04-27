@@ -2,20 +2,25 @@
   import { onMount } from 'svelte';
   import { user } from '$lib/stores/user';
   import { goto } from '$app/navigation';
-  import { getFollowLists } from '$lib/services/follow-list.service';
+  import { getFollowLists, LIST_LIMIT } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
   import type { FollowList } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
 
   let followLists: FollowList[] = [];
   let loading = true;
+  let loadingMore = false;
+  let hasMoreLists = false;
 
-  onMount(async () => {
+  async function loadFollowLists(until?: number) {
     try {
-      followLists = await getFollowLists();
+      const lists = await getFollowLists(LIST_LIMIT, undefined, until);
+      
+      // Determine if we might have more lists
+      hasMoreLists = lists.length >= LIST_LIMIT;
       
       // Fetch profile information for each preview user in each list
-      for (const list of followLists) {
+      for (const list of lists) {
         const previewEntries = list.entries.slice(0, 5);
         for (const entry of previewEntries) {
           try {
@@ -29,6 +34,37 @@
           }
         }
       }
+      
+      return lists;
+    } catch (error) {
+      console.error('Error fetching follow lists:', error);
+      return [];
+    }
+  }
+
+  async function loadMore() {
+    if (followLists.length === 0 || loadingMore) return;
+    
+    loadingMore = true;
+    
+    // Get the oldest list's timestamp
+    const oldestList = followLists[followLists.length - 1];
+    const until = oldestList.createdAt;
+    
+    // Load more lists
+    const moreLists = await loadFollowLists(until);
+    
+    // Append new lists to existing ones, avoiding duplicates
+    const newListIds = new Set(moreLists.map(list => list.id));
+    const uniqueNewLists = moreLists.filter(list => !followLists.some(existing => existing.id === list.id));
+    followLists = [...followLists, ...uniqueNewLists];
+    
+    loadingMore = false;
+  }
+
+  onMount(async () => {
+    try {
+      followLists = await loadFollowLists();
     } catch (error) {
       console.error('Error fetching follow lists:', error);
     } finally {
@@ -139,6 +175,19 @@
           </a>
         {/each}
       </div>
+      
+      <!-- Pagination -->
+      {#if hasMoreLists}
+        <div class="mt-8 text-center">
+          <button 
+            on:click={loadMore}
+            class="btn btn-outline btn-sm px-4 {loadingMore ? 'loading' : ''}"
+            disabled={loadingMore}
+          >
+            {loadingMore ? 'Loading...' : 'Discover more'}
+          </button>
+        </div>
+      {/if}
     {/if}
   </div>
 </div>

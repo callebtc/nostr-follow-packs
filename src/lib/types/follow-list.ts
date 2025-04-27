@@ -1,7 +1,7 @@
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 // The constant for our custom follow list event kind (replaceable)
-export const FOLLOW_LIST_KIND = 29089;
+export const FOLLOW_LIST_KIND = 19089;
 
 export interface FollowListEntry {
     pubkey: string;

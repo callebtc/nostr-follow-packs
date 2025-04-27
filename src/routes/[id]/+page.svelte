@@ -4,6 +4,7 @@
   import { user, followUser } from '$lib/stores/user';
   import { getFollowListById } from '$lib/services/follow-list.service';
   import { hexToNpub } from '$lib/services/vertex-search';
+  import { goto } from '$app/navigation';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
 
   let followList: FollowList | null = null;
@@ -33,6 +34,18 @@
       loading = false;
     }
   });
+
+  // Check if the current user is the author of this follow list
+  function isAuthor(): boolean {
+    if (!$user || !followList) return false;
+    return $user.pubkey === followList.pubkey;
+  }
+
+  // Handle edit button click
+  function handleEdit() {
+    if (!followList) return;
+    goto(`/create?edit=${followList.id}`);
+  }
 
   // Check if the current user is following a specific pubkey
   function isFollowing(pubkey: string): boolean {
@@ -117,7 +130,12 @@
           {/if}
         </div>
         
-        <a href="/" class="btn btn-secondary">Back to Home</a>
+        <div class="flex space-x-2">
+          {#if isAuthor()}
+            <button on:click={handleEdit} class="btn btn-primary">Edit List</button>
+          {/if}
+          <a href="/" class="btn btn-secondary">Back to Home</a>
+        </div>
       </div>
     </div>
     

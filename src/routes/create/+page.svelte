@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import { user } from '$lib/stores/user';
   import { searchUsers, npubToHex, isValidNpub } from '$lib/services/vertex-search';
-  import { publishFollowList } from '$lib/services/follow-list.service';
+  import { publishFollowList, getFollowListById } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
   import type { VertexSearchResult } from '$lib/services/vertex-search';
-  import type { FollowListEntry } from '$lib/types/follow-list';
+  import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
 
   // Debug logging
   const DEBUG = true;
@@ -23,10 +24,52 @@
   let selectedEntries: FollowListEntry[] = [];
   let submitting = false;
   let error = '';
+  let editMode = false;
+  let editId = '';
   
   // Validation state
   let nameValid = true;
   let entriesValid = true;
+  
+  onMount(async () => {
+    // Check if we're in edit mode
+    const editParam = $page.url.searchParams.get('edit');
+    if (editParam) {
+      editMode = true;
+      editId = editParam;
+      await loadExistingList(editParam);
+    }
+  });
+  
+  // Load an existing list for editing
+  async function loadExistingList(id: string) {
+    try {
+      const list = await getFollowListById(id);
+      if (!list) {
+        error = 'Could not find the follow list to edit';
+        editMode = false;
+        return;
+      }
+      
+      // Check if the user is the author
+      if (!$user || $user.pubkey !== list.pubkey) {
+        error = 'You are not authorized to edit this follow list';
+        editMode = false;
+        return;
+      }
+      
+      // Load the list data into the form
+      name = list.name;
+      coverImageUrl = list.coverImageUrl;
+      selectedEntries = [...list.entries];
+      
+      logDebug('Loaded existing list for editing:', { id, name, entries: selectedEntries.length });
+    } catch (err) {
+      console.error('Error loading follow list for editing:', err);
+      error = `Error loading list: ${err.message || 'Unknown error'}`;
+      editMode = false;
+    }
+  }
   
   // Handle user search
   async function handleSearch() {
@@ -135,16 +178,16 @@
     submitting = true;
     error = '';
     
-    logDebug('Publishing follow list:', { name, entries: selectedEntries.length });
+    logDebug('Publishing follow list:', { name, entries: selectedEntries.length, editMode });
     
     try {
-      // Publish the follow list
+      // Publish the follow list (same method for create and edit)
       const id = await publishFollowList(name, coverImageUrl, selectedEntries);
       logDebug('Published with ID:', id);
       
       if (id) {
         // Navigate to the new follow list
-        logDebug('Redirecting to new follow list page');
+        logDebug('Redirecting to follow list page');
         goto(`/${id}`);
       } else {
         error = 'Failed to publish follow list. Please try again.';
@@ -163,7 +206,7 @@
 <div class="container py-10">
   <div class="max-w-2xl mx-auto">
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Create Follow List</h1>
+      <h1 class="text-3xl font-bold text-gray-900">{editMode ? 'Edit' : 'Create'} Follow List</h1>
       <a href="/" class="btn btn-secondary">Cancel</a>
     </div>
     
@@ -352,7 +395,7 @@
             disabled={submitting}
             class="btn btn-primary px-6 py-3 text-base {submitting ? 'opacity-70' : ''}"
           >
-            {submitting ? 'Publishing...' : 'Publish Follow List'}
+            {submitting ? (editMode ? 'Updating...' : 'Publishing...') : (editMode ? 'Update' : 'Publish') + ' Follow List'}
           </button>
         </div>
       </form>

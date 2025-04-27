@@ -9,11 +9,11 @@ const logDebug = (...args: any[]) => {
 
 // Define the default relays to connect to
 export const DEFAULT_RELAYS = [
-    'wss://relay.vertexlab.io',  // Vertex relay (needed for search)
-    'wss://relay.damus.io',
-    'wss://relay.nostr.band',
-    'wss://purplepag.es',
-    'wss://relay.snort.social',
+    // 'wss://relay.vertexlab.io',  // Vertex relay (needed for search)
+    // 'wss://relay.damus.io',
+    // 'wss://relay.nostr.band',
+    // 'wss://purplepag.es',
+    // 'wss://relay.snort.social',
     'wss://relay.8333.space'
 ];
 

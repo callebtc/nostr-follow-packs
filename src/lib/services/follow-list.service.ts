@@ -177,8 +177,8 @@ export async function publishFollowList(
         await event.sign();
         logDebug('Signed event with ID:', event.id);
 
-        await event.publish();
-        logDebug('Published event successfully');
+        // await event.publish();
+        // logDebug('Published event successfully');
 
         // Publish to each relay individually
         for (const relayUrl of DEFAULT_RELAYS) {

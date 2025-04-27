@@ -164,7 +164,7 @@
               </div>
               
               <p class="text-sm text-gray-500 mt-2">
-                {list.entries.length} {list.entries.length === 1 ? 'user' : 'users'} · Created {getRelativeTime(list.createdAt)}
+                {list.entries.length} {list.entries.length === 1 ? 'user' : 'users'} · created {getRelativeTime(list.createdAt)}
               </p>
             </div>
           </a>

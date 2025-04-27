@@ -16,8 +16,8 @@ export interface VertexSearchResult {
  * Vertex search kinds
  */
 const VERTEX_SEARCH_REQUEST_KIND = 5315;
-const VERTEX_SEARCH_RESPONSE_KIND = 6315;
-const VERTEX_ERROR_KIND = 7000;
+const VERTEX_SEARCH_RESPONSE_KIND = 6315 as unknown as number;
+const VERTEX_ERROR_KIND = 7000 as unknown as number;
 
 /**
  * Search for a user by name or npub using Vertex AI

@@ -171,7 +171,12 @@
             <div class="mb-6">
               <p class="block text-sm font-medium text-gray-700 mb-2">Cover Image Preview</p>
               <div class="h-36 bg-gray-100 rounded-md overflow-hidden">
-                <img src={coverImageUrl} alt="Cover Preview" class="w-full h-full object-cover" onerror="this.src='https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';this.onerror='';" />
+                <img 
+                  src={coverImageUrl} 
+                  alt="Cover Preview" 
+                  class="w-full h-full object-cover" 
+                  on:error={(e) => e.target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                />
               </div>
             </div>
           {/if}

@@ -1,4 +1,4 @@
-import { ndk, getNdkWithSigner } from '$lib/nostr/ndk';
+import { ndk, getNdkWithSigner, DEFAULT_RELAYS } from '$lib/nostr/ndk';
 import type { NDKEvent } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
@@ -170,7 +170,8 @@ export async function publishFollowList(
         };
 
         const event = createFollowListEvent(followList);
-        logDebug('Created event:', { kind: event.kind, tags: event.tags.length });
+        event.ndk = signerNdk;
+        logDebug('Created event:', { kind: event.kind, tags: event.tags, content: event.content });
 
         // Sign and publish the event
         await event.sign();
@@ -178,6 +179,17 @@ export async function publishFollowList(
 
         await event.publish();
         logDebug('Published event successfully');
+
+        // Publish to each relay individually
+        for (const relayUrl of DEFAULT_RELAYS) {
+            try {
+                const relay = await signerNdk.pool.getRelay(relayUrl);
+                await relay.publish(event);
+                logDebug(`Published to ${relayUrl}`);
+            } catch (err) {
+                logDebug(`Failed to publish to ${relayUrl}:`, err);
+            }
+        }
 
         return event.id;
     } catch (error) {

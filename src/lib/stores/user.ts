@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
 import NDK, { NDKEvent, NDKUser, NDKKind } from '@nostr-dev-kit/ndk';
-import { ndk } from '$lib/nostr/ndk';
+import { DEFAULT_RELAYS, getNdkWithSigner, ndk } from '$lib/nostr/ndk';
 
 export interface UserProfile {
     pubkey: string;
@@ -16,6 +16,13 @@ export const user = writable<UserProfile | null>(null);
 // Local storage cache keys
 const USER_CACHE_KEY = 'nostr-follow-list:user';
 const PROFILE_CACHE_PREFIX = 'nostr-follow-list:profile:';
+
+// Debug logging
+const DEBUG = true;
+const logDebug = (...args: any[]) => {
+    if (DEBUG) console.log('[User Store]', ...args);
+};
+
 
 /**
  * Check if a NIP-07 extension is available in the browser
@@ -135,12 +142,14 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
  */
 export async function followUser(pubkeyToFollow: string): Promise<boolean> {
     try {
+        const signerNdk = await getNdkWithSigner();
+
         // Get the current user data
         const currentUser = get(user);
         if (!currentUser) throw new Error('No logged in user');
 
         // Create an updated follow list
-        const event = new NDKEvent(ndk);
+        const event = new NDKEvent(signerNdk);
         event.kind = NDKKind.Contacts;
 
         // Add all existing follows as p tags
@@ -158,7 +167,18 @@ export async function followUser(pubkeyToFollow: string): Promise<boolean> {
         await event.sign();
 
         // Publish to relays
-        await event.publish();
+        // await event.publish();
+
+        // Publish to each relay individually
+        for (const relayUrl of DEFAULT_RELAYS) {
+            try {
+                const relay = await signerNdk.pool.getRelay(relayUrl);
+                await relay.publish(event);
+                logDebug(`Published to ${relayUrl}`);
+            } catch (err) {
+                logDebug(`Failed to publish to ${relayUrl}:`, err);
+            }
+        }
 
         // Update the store
         user.set(currentUser);

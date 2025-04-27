@@ -8,7 +8,7 @@ const logDebug = (...args: any[]) => {
 };
 
 // Define the default relays to connect to
-const DEFAULT_RELAYS = [
+export const DEFAULT_RELAYS = [
     'wss://relay.vertexlab.io',  // Vertex relay (needed for search)
     'wss://relay.damus.io',
     'wss://relay.nostr.band',

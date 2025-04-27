@@ -77,8 +77,7 @@
   <div class="text-center mb-12">
     <h1 class="text-4xl font-bold text-gray-900 mb-4">Nostr Follow Lists</h1>
     <p class="text-xl text-gray-600 max-w-2xl mx-auto">
-      Discover and share curated lists of Nostr users to follow. 
-      Create your own follow lists and share them with the community.
+      Discover and share curated lists of Nostr users to follow. Find the users that are most interesting to you or create your own lists.
     </p>
     
     <div class="mt-8">

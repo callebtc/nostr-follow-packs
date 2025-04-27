@@ -42,14 +42,17 @@
 </script>
 
 <svelte:head>
-  <title>Nostr Follow List</title>
+  <title>Sheepstr</title>
   <meta name="description" content="Create, share, and discover Nostr follow lists" />
 </svelte:head>
 
 <div class="min-h-screen flex flex-col">
   <header class="bg-white shadow-sm">
     <div class="container py-4 flex justify-between items-center">
-      <a href="/" class="text-2xl font-bold text-purple-600">Nostr Follow List</a>
+      <div class="flex items-center">
+        <img src="/sheep.png" alt="Sheep" class="w-1/2 mx-auto mr-2" style="max-height: 40px;">
+        <a href="/" class="text-2xl font-bold text-purple-600">Sheepstr</a>
+      </div>
       <div>
         {#if $user}
           <div class="relative user-menu-container">
@@ -94,7 +97,7 @@
 
   <footer class="bg-white border-t">
     <div class="container py-6 text-center text-gray-500">
-      <p>Nostr Follow List – Discover and share your favorite Nostr users</p>
+      <p>Sheepstr – Discover and share your favorite Nostr users</p>
     </div>
   </footer>
 </div> 

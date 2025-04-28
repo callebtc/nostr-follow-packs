@@ -51,9 +51,13 @@ export const handle: Handle = async ({ event, resolve }) => {
                     console.log('Metadata exists:', metadataExists);
                 }
                 let followList: FollowList | null = null;
+                // test: fetch 
                 if (!metadataExists) {
                     // Fetch the follow list data
                     console.log('[!metadataExists] Connecting to relays');
+                    const res = await fetch('https://api.ipify.org?format=json');
+                    const data = await res.json();
+                    console.log('[!metadataExists] Server public IP:', data.ip);
                     await ndk.connect();
                     followList = await getFollowListById(listId);
                     if (followList) {

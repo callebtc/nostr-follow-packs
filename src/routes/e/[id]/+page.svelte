@@ -249,14 +249,16 @@
           {#each followList.entries as entry}
             <li class="p-4 sm:p-6 flex items-start justify-between">
               <div class="flex items-start">
-                <button on:click={() => openProfilePage(entry.pubkey)}>
-                <img 
-                  src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                  alt={entry.name || 'User'} 
-                  class="w-10 h-10 rounded-full mr-4"
-                  style="margin-top: 0.5rem !important;"
-                />
-                </button>
+                <div class="min-w-[60px]">
+                  <button on:click={() => openProfilePage(entry.pubkey)}>
+                  <img 
+                      src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                      alt={entry.name || 'User'} 
+                      class="w-10 h-10 rounded-full mr-4"
+                      style="margin-top: 0.5rem !important;"
+                    />
+                  </button>
+                </div>
                 <div>
                   <h3 class="text-lg font-medium text-gray-900">
                     <button on:click={() => openProfilePage(entry.pubkey)}>

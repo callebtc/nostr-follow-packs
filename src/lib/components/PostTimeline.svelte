@@ -3,6 +3,7 @@
   import { ndk } from '$lib/nostr/ndk';
   import { getRelativeTime } from '$lib/utils/date';
   import type { FollowListEntry } from '$lib/types/follow-list';
+  import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
 
   export let pubkeys: string[] = [];
   export let entries: FollowListEntry[] = [];
@@ -155,7 +156,7 @@
                 {/if}
               </h3>
               <span class="text-xs text-gray-500">
-                {post.pubkey.substring(0, 8)}...{post.pubkey.substring(post.pubkey.length - 8)} · {getRelativeTime(post.created_at)}
+                <PublicKeyDisplay pubkey={post.pubkey} /> · {getRelativeTime(post.created_at)}
               </span>
             </div>
           </div>

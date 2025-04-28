@@ -8,12 +8,12 @@
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
   import PostTimeline from '$lib/components/PostTimeline.svelte';
+  import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
   let success = '';
-  let copying = '';
   let followingAll = false;
   let activeTab = 'people'; // Default active tab
 
@@ -164,21 +164,6 @@
     }
   }
 
-  // Copy npub to clipboard
-  async function copyNpub(pubkey: string) {
-    try {
-      copying = pubkey;
-      const npub = await hexToNpub(pubkey);
-      if (npub) {
-        await navigator.clipboard.writeText(npub);
-        setTimeout(() => { copying = ''; }, 1500);
-      }
-    } catch (err) {
-      console.error('Error copying npub:', err);
-      copying = '';
-    }
-  }
-
   function setActiveTab(tab: string) {
     activeTab = tab;
   }
@@ -228,17 +213,9 @@
               
             </div>
             <div class="flex ml-1 mt-2">
-              <span class="text-xs text-gray-500">{getRelativeTime(followList.createdAt)} · </span>
-                <button 
-                  on:click={() => copyNpub(followList?.pubkey || 'Unknown pubkey')}
-                  class="ml-1 text-xs text-gray-500 hover:text-gray-700 transition"
-                >
-                  {#if copying === followList?.pubkey}
-                    <span class="text-green-600">Copied!</span>
-                  {:else}
-                    {followList?.pubkey.substring(0, 8)}...{followList?.pubkey.substring(followList?.pubkey.length - 8)}
-                  {/if}
-                </button>
+            
+              <span class="text-xs text-gray-500"><PublicKeyDisplay pubkey={followList.pubkey} />  · {getRelativeTime(followList.createdAt)}</span>
+                
             </div>
         </div>
         
@@ -314,16 +291,7 @@
                       </span>
                     {/if}
                   </h3>
-                  <button 
-                    on:click={() => copyNpub(entry.pubkey)}
-                    class="text-xs text-gray-500 hover:text-gray-700 transition"
-                  >
-                    {#if copying === entry.pubkey}
-                      <span class="text-green-600">Copied!</span>
-                    {:else}
-                      {entry.pubkey.substring(0, 8)}...{entry.pubkey.substring(entry.pubkey.length - 8)}
-                    {/if}
-                  </button>
+                  <PublicKeyDisplay pubkey={entry.pubkey} />
                   {#if entry.bio}
                     <p class="text-sm font-normal text-gray-600 mt-1">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
                   {/if}

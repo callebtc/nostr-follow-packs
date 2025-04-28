@@ -8,6 +8,7 @@
   import { getProfileByPubkey } from '$lib/stores/user';
   import type { VertexSearchResult } from '$lib/services/vertex-search';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
+  import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
 
   // Debug logging
   const DEBUG = true;
@@ -354,7 +355,9 @@
                   src={coverImageUrl} 
                   alt="Cover Preview" 
                   class="w-full h-full object-cover" 
-                  on:error={(e) => e.target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                  on:error={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                  }} 
                 />
               </div>
             </div>
@@ -416,7 +419,7 @@
                       />
                       <div>
                         <p class="font-medium">{result.name || 'Unknown User'}</p>
-                        <p class="text-xs text-gray-500">{result.pubkey.substring(0, 8)}...{result.pubkey.substring(result.pubkey.length - 8)}</p>
+                        <PublicKeyDisplay pubkey={result.pubkey} />
                       </div>
                     </div>
                     <button
@@ -462,7 +465,7 @@
                             {entry.nip05}
                           </p>
                         {/if}
-                        <p class="text-xs text-gray-500">{entry.pubkey.substring(0, 8)}...{entry.pubkey.substring(entry.pubkey.length - 8)}</p>
+                        <PublicKeyDisplay pubkey={entry.pubkey} />
                       </div>
                     </div>
                     <button

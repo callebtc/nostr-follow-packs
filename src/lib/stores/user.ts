@@ -315,7 +315,7 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
         await ndkUser.fetchProfile();
 
         const profile = {
-            name: ndkUser.profile?.name,
+            name: ndkUser.profile?.name || ndkUser.profile?.displayName,
             picture: ndkUser.profile?.picture as string | undefined,
             bio: ndkUser.profile?.about,
             nip05: ndkUser.profile?.nip05,

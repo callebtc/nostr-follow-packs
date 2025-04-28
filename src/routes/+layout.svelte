@@ -51,7 +51,7 @@
     <div class="container py-4 flex justify-between items-center">
       <div class="flex items-center">
         <a href="/"><img src="/sheep.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;"></a> 
-        <a href="/" class="text-2xl font-bold text-purple-600">The Following</a>
+        <a href="/" class="text-2xl font-bold text-purple-600 hidden sm:inline">Following</a>
       </div>
       <div>
         {#if $user}

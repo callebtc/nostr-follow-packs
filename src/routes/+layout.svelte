@@ -50,8 +50,8 @@
   <header class="bg-white shadow-sm">
     <div class="container py-4 flex justify-between items-center">
       <div class="flex items-center">
-        <img src="/sheep.png" alt="Sheep" class="w-1/2 mx-auto mr-2" style="max-height: 40px;">
-        <a href="/" class="text-2xl font-bold text-purple-600">Sheepstr</a>
+        <img src="/sheep.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;">
+        <a href="/" class="text-2xl font-bold text-purple-600">The Following</a>
       </div>
       <div>
         {#if $user}
@@ -83,7 +83,7 @@
             {/if}
           </div>
         {:else}
-          <button on:click={handleLogin} class="btn btn-primary">
+          <button on:click={handleLogin} class="btn btn-primary mt-2">
             Login with Extension
           </button>
         {/if}

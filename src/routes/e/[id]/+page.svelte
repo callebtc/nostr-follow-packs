@@ -163,7 +163,7 @@
   <!-- Error state -->
   {:else if error || !followList}
     <div class="bg-white rounded-lg shadow-sm p-8 text-center">
-      <h2 class="text-2xl font-bold text-gray-900 mb-4">Follow List Not Found</h2>
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Follow Pack Not Found</h2>
       <p class="text-gray-600 mb-6">The follow list you're looking for doesn't exist or could not be loaded.</p>
       <a href="/" class="btn btn-primary">Back to Home</a>
     </div>

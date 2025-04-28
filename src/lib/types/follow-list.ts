@@ -34,7 +34,7 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
     try {
         // Get the name from the n tag
         const nTag = event.tags.find(tag => tag[0] === 'n');
-        const name = nTag && nTag[1] ? nTag[1] : 'Untitled Follow List';
+        const name = nTag && nTag[1] ? nTag[1] : 'Untitled Follow Pack';
 
         // Get the id from the d tag
         const dTag = event.tags.find(tag => tag[0] === 'd');

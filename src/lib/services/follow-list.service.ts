@@ -17,7 +17,7 @@ export const LIST_LIMIT = 20;
 // Debug logging configuration
 const DEBUG = true;
 const logDebug = (...args: any[]) => {
-    if (DEBUG) console.log('[Follow List Service]', ...args);
+    if (DEBUG) console.log('[Follow Pack Service]', ...args);
 };
 
 /**

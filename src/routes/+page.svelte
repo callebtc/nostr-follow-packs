@@ -75,7 +75,7 @@
 <div class="container py-10">
   <!-- Hero section -->
   <div class="text-center mb-12">
-    <h1 class="text-4xl font-bold text-gray-900 mb-4">Nostr Follow Lists</h1>
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">Nostr Follow Packs</h1>
     <p class="text-xl text-gray-600 max-w-2xl mx-auto">
       Discover and share curated lists of Nostr users to follow. Find the users that are most interesting to you or create your own lists.
     </p>
@@ -86,7 +86,7 @@
         class="btn btn-primary text-lg px-6 py-3 {!$user ? 'btn-disabled' : ''}"
         disabled={!$user}
       >
-        Create New Follow List
+        Create New Follow Pack
       </button>
       
       {#if !$user}
@@ -97,7 +97,7 @@
   
   <!-- Browse section -->
   <div class="mt-16">
-    <h2 class="text-2xl font-bold text-gray-900 mb-6">Browse Follow Lists</h2>
+    <h2 class="text-2xl font-bold text-gray-900 mb-6">Browse Follow Packs</h2>
     
     {#if loading}
       <div class="flex justify-center py-12">

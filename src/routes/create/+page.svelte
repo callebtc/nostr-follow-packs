@@ -245,7 +245,7 @@
 <div class="container py-10">
   <div class="max-w-2xl mx-auto">
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">{editMode ? 'Edit' : 'Create'} Follow List</h1>
+      <h1 class="text-3xl font-bold text-gray-900">{editMode ? 'Edit' : 'Create'} Follow Pack</h1>
       <a href="/" class="btn btn-secondary">Cancel</a>
     </div>
     
@@ -272,7 +272,7 @@
       {#if showDeleteConfirm}
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div class="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 class="text-xl font-bold text-gray-900 mb-4">Delete Follow List</h3>
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Delete Follow Pack</h3>
             <p class="text-gray-700 mb-6">
               Are you sure you want to delete the follow list "{name}"? This action cannot be undone.
             </p>
@@ -298,7 +298,7 @@
       
       <form on:submit|preventDefault={handleSubmit} class="bg-white shadow-sm rounded-lg overflow-hidden">
         <div class="p-6 border-b">
-          <h2 class="text-xl font-medium mb-6">Follow List Details</h2>
+          <h2 class="text-xl font-medium mb-6">Follow Pack Details</h2>
           
           <!-- Name field -->
           <div class="mb-4">
@@ -362,7 +362,7 @@
         </div>
         
         <div class="p-6 border-b">
-          <h2 class="text-xl font-medium mb-6">Add Users to Follow List</h2>
+          <h2 class="text-xl font-medium mb-6">Add Users to Follow Pack</h2>
           
           <!-- Search field -->
           <div class="mb-4">
@@ -497,7 +497,7 @@
             disabled={submitting}
             class="btn btn-primary px-6 py-3 text-base {submitting ? 'opacity-70' : ''}"
           >
-            {submitting ? (editMode ? 'Updating...' : 'Publishing...') : (editMode ? 'Update' : 'Publish') + ' Follow List'}
+            {submitting ? (editMode ? 'Updating...' : 'Publishing...') : (editMode ? 'Update' : 'Publish') + ' Follow Pack'}
           </button>
         </div>
       </form>

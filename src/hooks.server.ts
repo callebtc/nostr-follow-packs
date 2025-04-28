@@ -35,7 +35,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             try {
                 // Fetch the follow list data
                 console.log('Connecting to relays');
-                ndk.connect();
+                await ndk.connect();
                 const followList = await getFollowListById(listId);
                 console.log('Follow list:', followList);
                 if (followList) {

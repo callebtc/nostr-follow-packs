@@ -73,7 +73,29 @@ export async function getAuthorProfile(list: FollowList) {
     return list;
 }
 
-export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined): Promise<FollowList> {
+export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined, entryIndex?: number): Promise<FollowList> {
+    // If entryIndex is provided, only process that specific entry
+    if (entryIndex !== undefined) {
+        if (entryIndex >= 0 && entryIndex < list.entries.length) {
+            try {
+                const entry = list.entries[entryIndex];
+                const profile = await getProfileByPubkey(entry.pubkey);
+                // Create a new entry object to trigger reactivity
+                const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05, nip05Verified: profile.nip05Verified } as FollowListEntry;
+                // Replace the entry in the array with the new object
+                list.entries[entryIndex] = updatedEntry;
+                // Return updated list
+                return { ...list, entries: [...list.entries] };
+            } catch (err) {
+                console.error(`Error fetching profile for entry at index ${entryIndex}:`, err);
+                logDebug(`Error fetching profile for entry at index ${entryIndex}:`, err);
+                return list;
+            }
+        }
+        return list;
+    }
+
+    // Original functionality (process multiple entries)
     const entriesToLoad = maxEntries ? Math.min(list.entries.length, maxEntries) : list.entries.length;
     for (let i = 0; i < entriesToLoad; i++) {
         try {

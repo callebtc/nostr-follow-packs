@@ -5,7 +5,7 @@
   import type { FollowListEntry } from '$lib/types/follow-list';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
-
+  import { hexToNpub } from '$lib/services/vertex-search';
   export let pubkeys: string[] = [];
   export let entries: FollowListEntry[] = [];
   
@@ -113,6 +113,10 @@
     
     return processedContent;
   }
+  async function openProfilePage(pubkey: string) {
+    const npub = await hexToNpub(pubkey);
+    window.open(`https://njump.me/${npub}`, '_blank');
+  }
 </script>
 
 <div class="bg-white rounded-lg shadow-sm overflow-hidden timeline-container mx-auto">
@@ -141,16 +145,19 @@
         <li class="p-4 sm:p-6">
           <!-- Post header with user info -->
           <div class="flex items-start mb-3">
+            <button on:click={() => openProfilePage(post.pubkey)}>
             <img 
               src={post.profile.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
               alt={post.profile.name || 'User'} 
               class="w-10 h-10 rounded-full mr-4"
               style="margin-top: 0.5rem !important;"
             />
-            
+            </button>
             <div class="flex-grow">
               <h3 class="text-lg font-medium text-gray-900 mt-1">
+                <button on:click={() => openProfilePage(post.pubkey)}>
                 {post.profile.name || 'Unknown User'}
+                </button>
                 {#if post.profile.nip05}
                   <span class="text-xs text-gray-500 hover:text-gray-700 transition">
                     {post.profile.nip05}

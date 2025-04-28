@@ -9,7 +9,7 @@
   import PostTimeline from '$lib/components/PostTimeline.svelte';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
-  
+  import { hexToNpub } from '$lib/services/vertex-search';
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
@@ -130,6 +130,11 @@
   function setActiveTab(tab: string) {
     activeTab = tab;
   }
+
+  async function openProfilePage(pubkey: string) {
+    const npub = await hexToNpub(pubkey);
+    window.open(`https://njump.me/${npub}`, '_blank');
+  }
 </script>
 
 <div class="container py-10 people-container">
@@ -167,12 +172,16 @@
           <h1 class="text-3xl font-bold text-gray-900">{followList.name}</h1>
           
             <div class="flex mt-2">
+              <button on:click={() => openProfilePage(followList?.pubkey || '')}>
               <img 
                 src={followList.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                 alt={followList.authorName || 'Author'} 
                 class="w-6 h-6 rounded-full mr-2"
               />
+              </button>
+              <button on:click={() => openProfilePage(followList?.pubkey || '')}>
               <span class="text-gray-600">Created by {followList.authorName || 'Unknown'}</span>
+              </button>
               
             </div>
             <div class="flex ml-1 mt-2">
@@ -240,16 +249,19 @@
           {#each followList.entries as entry}
             <li class="p-4 sm:p-6 flex items-start justify-between">
               <div class="flex items-start">
+                <button on:click={() => openProfilePage(entry.pubkey)}>
                 <img 
                   src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                   alt={entry.name || 'User'} 
                   class="w-10 h-10 rounded-full mr-4"
                   style="margin-top: 0.5rem !important;"
                 />
-                
+                </button>
                 <div>
                   <h3 class="text-lg font-medium text-gray-900">
+                    <button on:click={() => openProfilePage(entry.pubkey)}>
                     {entry.name || 'Unknown User'}
+                    </button>
                     {#if entry.nip05}
                       <span class="text-xs text-gray-500 hover:text-gray-700 transition">
                         {entry.nip05}

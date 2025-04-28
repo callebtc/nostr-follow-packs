@@ -186,16 +186,28 @@
         <div>
           <h1 class="text-3xl font-bold text-gray-900">{followList.name}</h1>
           
-          {#if followList.authorName || followList.authorPicture}
-            <div class="flex items-center mt-2">
+            <div class="flex mt-2">
               <img 
                 src={followList.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                 alt={followList.authorName || 'Author'} 
                 class="w-6 h-6 rounded-full mr-2"
               />
+              <div class="flex mt-2">
               <span class="text-gray-600">Created by {followList.authorName || 'Unknown'} · {getRelativeTime(followList.createdAt)}</span>
+              <p class="ml-2">
+                <button 
+                  on:click={() => copyNpub(followList?.pubkey || 'Unknown pubkey')}
+                  class="text-xs text-gray-500 hover:text-gray-700 transition"
+                >
+                  {#if copying === followList?.pubkey}
+                    <span class="text-green-600">Copied!</span>
+                  {:else}
+                    {followList?.pubkey.substring(0, 8)}...{followList?.pubkey.substring(followList?.pubkey.length - 8)}
+                  {/if}
+                </button>
+              </p>
             </div>
-          {/if}
+            </div>
         </div>
         
         <div class="flex space-x-2">

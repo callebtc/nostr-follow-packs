@@ -134,16 +134,14 @@
               <h3 class="text-lg font-semibold mb-2">{list.name}</h3>
               
               <!-- Author info -->
-              {#if list.authorName || list.authorPicture}
-                <div class="flex items-center mb-3">
-                  <img 
-                    src={list.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                    alt={list.authorName || 'Author'} 
-                    class="w-5 h-5 rounded-full mr-2"
-                  />
-                  <span class="text-sm text-gray-600">{list.authorName || 'Unknown'}</span>
-                </div>
-              {/if}
+              <div class="flex items-center mb-3">
+                <img 
+                  src={list.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                  alt={list.authorName || 'Author'} 
+                  class="w-5 h-5 rounded-full mr-2"
+                />
+                <span class="text-sm text-gray-600">{list.authorName || 'Unknown User'}</span>
+              </div>
               
               <!-- Preview of users in the list -->
               <div class="flex -space-x-2 overflow-hidden mt-4">
@@ -152,6 +150,7 @@
                     src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                     alt={entry.name || 'User'} 
                     class="w-8 h-8 rounded-full border-2 border-white"
+                    style="margin-top: 0px;"
                   />
                 {/each}
                 

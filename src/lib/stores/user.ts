@@ -110,73 +110,6 @@ export async function loadUser(): Promise<void> {
             throw new Error('NIP-07 extension not found');
         }
 
-        // // Get user public key from extension
-        // const pubkey = await (window as any).nostr.getPublicKey();
-        // if (!pubkey) {
-        //     throw new Error('Failed to get public key from extension');
-        // }
-
-        // // Fetch the user metadata and following list
-        // const ndkUser = ndk.getUser({ pubkey });
-        // await ndkUser.fetchProfile();
-
-        // // Create our user object
-        // const userProfile: UserProfile = {
-        //     pubkey,
-        //     name: ndkUser.profile?.name,
-        //     picture: ndkUser.profile?.picture as string | undefined,
-        //     about: ndkUser.profile?.about,
-        //     npub: ndkUser.npub,
-        //     following: new Set<string>(),
-        //     relays: new Set<string>(DEFAULT_RELAYS)
-        // };
-
-        // // Get the user's follow list (NIP-02)
-        // const filter = { kinds: [NDKKind.Contacts], authors: [pubkey] };
-        // const followListEvents = await ndk.fetchEvents(filter);
-        // const eventsArray = Array.from(followListEvents);
-
-        // // Get the most recent event
-        // if (eventsArray.length > 0) {
-        //     // Sort by created_at (newest first)
-        //     eventsArray.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
-
-        //     const latestEvent = eventsArray[0];
-        //     const pTags = latestEvent.tags.filter(tag => tag[0] === 'p');
-        //     const pubkeys: string[] = [];
-
-        //     for (const tag of pTags) {
-        //         if (tag[1] && typeof tag[1] === 'string') {
-        //             userProfile.following.add(tag[1]);
-        //             pubkeys.push(tag[1]);
-        //         }
-        //     }
-
-        //     // Save snapshot of the follow list
-        //     saveFollowSnapshot(latestEvent, pubkeys);
-        // }
-
-        // // Get the user's kind 10002 relays and add them to the list of relays
-        // const relaysFilter = { kinds: [NDKKind.RelayList], authors: [pubkey] };
-        // const relaysEvents = await ndk.fetchEvents(relaysFilter);
-        // for (const event of relaysEvents) {
-        //     if (event.tags.length > 0) {
-        //         for (const tag of event.tags) {
-        //             if (tag[0] === 'r' && tag[1]) {
-        //                 userProfile.relays.add(tag[1]);
-        //             }
-        //         }
-        //     }
-        // }
-        // // Save the user profile to the store and cache
-        // user.set(userProfile);
-
-        // // append the global ndk instance with relays that are not already in the array
-        // // ndk.explicitRelayUrls.push(...Array.from(userProfile.relays).filter(relay => !ndk.explicitRelayUrls.includes(relay)));
-        // for (const relay of userProfile.relays) {
-        //     ndk.addExplicitRelay(relay);
-        // }
-
         // set the signer to the nip07 signer
         const nip07Signer = new NDKNip07Signer();
         logDebug('[loadUser] Created NIP-07 signer');
@@ -185,19 +118,7 @@ export async function loadUser(): Promise<void> {
 
         ndk.connect();
         logDebug('[loadUser] Connected to relays:', ndk.explicitRelayUrls);
-        // // connect to the relays
-        // if (ndk.connectedRelays.length === 0) {
-        //     await ndk.connect();
-        // }
-        // console.log('User connected to relays:', ndk.explicitRelayUrls);
 
-        // // Stringify with custom replacer for Set
-        // localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userProfile, (key, value) => {
-        //     if (value instanceof Set) {
-        //         return Array.from(value);
-        //     }
-        //     return value;
-        // }));
         loadUserProfile();
     } catch (error) {
         console.error('Error loading user:', error);
@@ -221,7 +142,7 @@ export async function loadUserProfile() {
     // Create our user object
     const userProfile: UserProfile = {
         pubkey,
-        name: ndkUser.profile?.name,
+        name: ndkUser.profile?.name || ndkUser.profile?.displayName,
         picture: ndkUser.profile?.picture as string | undefined,
         about: ndkUser.profile?.about,
         npub: ndkUser.npub,

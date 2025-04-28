@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
-import { generatePreviewImage } from '$lib/services/preview-image.service';
+import { generatePreviewImage, MAX_PREVIEW_ENTRIES } from '$lib/services/preview-image.service';
 import { getFollowListById, getProfileInfoForEntries } from '$lib/services/follow-list.service';
 import { ndk } from '$lib/nostr/ndk';
 import type { FollowList } from '$lib/types/follow-list';
@@ -87,8 +87,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                     await ndk.connect();
                     console.log('[!imageExists] Follow list:', followList);
                     console.log('[!imageExists] Generating image');
+
                     // Load profile information for the first few entries
-                    const MAX_PREVIEW_ENTRIES = 5;
                     const listWithProfiles = await getProfileInfoForEntries(followList, MAX_PREVIEW_ENTRIES);
                     await generatePreviewImage(listWithProfiles, cachePath);
                 }

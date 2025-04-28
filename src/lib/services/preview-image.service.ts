@@ -1,6 +1,9 @@
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas, loadImage, registerFont } from 'canvas';
 import type { FollowList } from '$lib/types/follow-list';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+export const MAX_PREVIEW_ENTRIES = 6;
 
 /**
  * Generates a preview image for social media sharing based on a follow list
@@ -8,6 +11,8 @@ import * as fs from 'node:fs';
  * @param outputPath The path where the generated image will be saved
  */
 export async function generatePreviewImage(followList: FollowList, outputPath: string): Promise<void> {
+    registerFont('static/fonts/Manrope-Regular.ttf', { family: 'Manrope' });
+    registerFont('static/fonts/Manrope-Bold.ttf', { family: 'Manrope', weight: 'bold' });
     // Create a canvas for the preview image (1200x630 is recommended for social media)
     const width = 1200;
     const height = 630;
@@ -21,21 +26,27 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Add the list name
-    ctx.font = 'bold 60px Arial, sans-serif';
+    // top text
+    ctx.font = 'bold 40px Manrope, sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(followList.name, width / 2, 120, width - 100);
+    ctx.fillText('NOSTR FOLLOW PACK', width / 2, 80, width - 100);
+
+    // Add the list name
+    ctx.font = 'bold 80px Manrope, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(followList.name, width / 2, 400, width - 100);
 
     // Add description if available
-    if (followList.description) {
-        ctx.font = '30px Arial, sans-serif';
+    if (followList.description && false) {
+        ctx.font = '30px Manrope, sans-serif';
         ctx.fillStyle = '#f0f0f0';
 
         // Wrap text to multiple lines if needed
         const words = followList.description.split(' ');
         let line = '';
-        let y = 180;
+        let y = 460;
         const maxWidth = width - 200;
         const lineHeight = 40;
 
@@ -49,7 +60,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
                 y += lineHeight;
 
                 // Limit to 3 lines
-                if (y > 180 + 2 * lineHeight) break;
+                if (y > 460 + 2 * lineHeight) break;
             } else {
                 line = testLine;
             }
@@ -58,11 +69,11 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
     }
 
     // Draw profile pictures in a grid
-    const maxProfiles = Math.min(5, followList.entries.length);
+    const maxProfiles = Math.min(6, followList.entries.length);
     const profileSize = 160;
-    const spacing = 20;
+    const spacing = -10;
     const startX = (width - (maxProfiles * (profileSize + spacing) - spacing)) / 2;
-    const startY = 320;
+    const startY = 120;
 
     const profiles = followList.entries.slice(0, maxProfiles);
     const defaultImage = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
@@ -87,30 +98,43 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
                 // Draw the profile image
                 ctx.drawImage(profileImg, x, y, profileSize, profileSize);
 
-                // Draw a white border around the profile picture
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 5;
+                // Draw a purple border around the profile picture
+                ctx.strokeStyle = '#7740f7';
+                ctx.lineWidth = 25;
                 ctx.stroke();
 
                 ctx.restore();
-
-                // Draw the user's name if available
-                if (profile.name) {
-                    ctx.font = '24px Arial, sans-serif';
-                    ctx.fillStyle = '#ffffff';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(profile.name, x + profileSize / 2, y + profileSize + 30, profileSize);
-                }
             } catch (error) {
                 console.error(`Error loading profile image for ${profile.pubkey}:`, error);
             }
         }));
 
+        // Load Nostr logo
+        const nostrLogoPath = path.join(process.cwd(), 'static/nostr_white.png');
+        const nostrLogo = await loadImage(nostrLogoPath);
+
         // Add a footer with number of people to follow
-        ctx.font = 'bold 30px Arial, sans-serif';
+        ctx.font = 'bold 40px Manrope, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(`${followList.entries.length} people to follow`, width / 2, height - 50);
+        ctx.fillText(`${followList.entries.length} people to follow`, width / 2, height - 155);
+
+        // Draw "on Nostr" with the logo
+        ctx.font = 'bold 50px Manrope, sans-serif';
+        const logoSize = 120; // Size for the small Nostr logo
+        const textMetrics = ctx.measureText("on Nostr");
+        const totalWidth = textMetrics.width + logoSize + 10; // Text width + logo + spacing
+
+        // Draw "on" text
+        ctx.fillText("on", width / 2 - totalWidth / 2 + 58, height - 80);
+
+        // Draw the Nostr logo
+        const logoX = width / 2 - totalWidth / 2 + 65; // Position after "on" text
+        const logoY = height - logoSize - 35; // Align vertically with text
+        ctx.drawImage(nostrLogo, logoX, logoY, logoSize, logoSize);
+
+        // Draw "Nostr" text
+        ctx.fillText("Nostr", width / 2 + 65, height - 80);
 
         // Save the canvas to a PNG file
         const buffer = canvas.toBuffer('image/png');

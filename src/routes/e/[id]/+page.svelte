@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { user, followUser } from '$lib/stores/user';
+  import { user, followUsers, unfollowUsers } from '$lib/stores/user';
   import { getFollowListById, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
   import { hexToNpub } from '$lib/services/vertex-search';
   import { goto } from '$app/navigation';
@@ -70,7 +70,7 @@
     if (!$user) return;
     
     try {
-      const result = await followUser(entry.pubkey);
+      const result = await followUsers([entry.pubkey]);
       if (result) {
         success = `You are now following ${entry.name || 'this user'}`;
         setTimeout(() => { success = ''; }, 5000);
@@ -80,26 +80,42 @@
     }
   }
 
+  // Handle unfollowing a user
+  async function handleUnfollow(entry: FollowListEntry) {
+    if (!$user) return;
+    
+    try {
+      const result = await unfollowUsers([entry.pubkey]);
+      if (result) {
+        success = `You are no longer following ${entry.name || 'this user'}`;
+        setTimeout(() => { success = ''; }, 5000);
+      }
+    } catch (err) {
+      console.error('Error unfollowing user:', err);
+    }
+  }
+
   // Handle follow all button click
   async function handleFollowAll() {
     if (!$user || !followList || followingAll) return;
     
     followingAll = true;
     let followedCount = 0;
-    
+    let pubkeysToFollow: string[] = [];
     try {
       for (const entry of followList.entries) {
         // Skip already followed users
         if (isFollowing(entry.pubkey)) continue;
-        
-        try {
-          const result = await followUser(entry.pubkey);
-          if (result) followedCount++;
-        } catch (err) {
-          console.error(`Error following ${entry.name || 'user'}:`, err);
+
+        pubkeysToFollow.push(entry.pubkey);
+      }
+
+      if (pubkeysToFollow.length > 0) {
+        const result = await followUsers(pubkeysToFollow);
+        if (result) {
+          followedCount = pubkeysToFollow.length;
         }
       }
-      
       if (followedCount > 0) {
         success = `You are now following ${followedCount} new user${followedCount === 1 ? '' : 's'} from this list`;
         setTimeout(() => { success = ''; }, 5000);
@@ -245,8 +261,11 @@
             
             {#if $user}
               {#if isFollowing(entry.pubkey)}
-                <button class="btn btn-outline" disabled>
-                  Already Following
+                <button 
+                  on:click={() => handleUnfollow(entry)}
+                  class="btn btn-outline"
+                >
+                  Following
                 </button>
               {:else}
                 <button 

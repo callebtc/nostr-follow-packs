@@ -257,7 +257,7 @@ export async function isNip05Verified(pubkey: string, nip05: string): Promise<bo
 /**
  * Follow a user by adding them to the current user's contact list
  */
-export async function followUser(pubkeyToFollow: string): Promise<boolean> {
+export async function followUsers(pubkeysToFollow: string[]): Promise<boolean> {
     try {
         const signerNdk = await getNdkWithSigner();
 
@@ -279,10 +279,12 @@ export async function followUser(pubkeyToFollow: string): Promise<boolean> {
         }
 
         // Add the new pubkey if not already following
-        if (!currentUser.following.has(pubkeyToFollow)) {
-            event.tags.push(['p', pubkeyToFollow]);
-            currentUser.following.add(pubkeyToFollow);
-            pubkeys.push(pubkeyToFollow);
+        for (const pubkeyToFollow of pubkeysToFollow) {
+            if (!currentUser.following.has(pubkeyToFollow)) {
+                event.tags.push(['p', pubkeyToFollow]);
+                currentUser.following.add(pubkeyToFollow);
+                pubkeys.push(pubkeyToFollow);
+            }
         }
 
         // Sign with the extension
@@ -307,6 +309,57 @@ export async function followUser(pubkeyToFollow: string): Promise<boolean> {
         return true;
     } catch (error) {
         console.error('Error following user:', error);
+        return false;
+    }
+}
+
+export async function unfollowUsers(pubkeysToUnfollow: string[]): Promise<boolean> {
+    try {
+        const signerNdk = await getNdkWithSigner();
+
+        // Get the current user data
+        const currentUser = get(user);
+        if (!currentUser) throw new Error('No logged in user');
+
+        // Create a new follow list event
+        const event = new NDKEvent(signerNdk);
+        event.kind = NDKKind.Contacts;
+
+        // Create an array to store pubkeys for the snapshot
+        const pubkeys: string[] = [];
+
+        // Add all remaining follows as p tags
+        for (const pubkey of currentUser.following) {
+            if (!pubkeysToUnfollow.includes(pubkey)) {
+                event.tags.push(['p', pubkey]);
+                pubkeys.push(pubkey);
+            } else {
+                currentUser.following.delete(pubkey);
+            }
+        }
+
+        // Sign with the extension
+        await event.sign();
+
+        await publishEvent(event);
+
+        // Save a snapshot of the follow list
+        saveFollowSnapshot(event, pubkeys);
+
+        // Update the store
+        user.set(currentUser);
+
+        // Update cache
+        localStorage.setItem(USER_CACHE_KEY, JSON.stringify(currentUser, (key, value) => {
+            if (value instanceof Set) {
+                return Array.from(value);
+            }
+            return value;
+        }));
+
+        return true;
+    } catch (error) {
+        console.error('Error unfollowing users:', error);
         return false;
     }
 }

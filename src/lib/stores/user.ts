@@ -95,6 +95,10 @@ export async function checkNip07Extension(): Promise<boolean> {
  */
 export async function loadUser(): Promise<void> {
     try {
+        // if user is already loaded, return
+        if (get(user)) return;
+
+        console.log('Loading user')
         // Check if we have a cached user profile
         const cachedUser = localStorage.getItem(USER_CACHE_KEY);
         if (cachedUser) {
@@ -169,6 +173,10 @@ export async function loadUser(): Promise<void> {
 
         // append the global ndk instance with relays that are not already in the array
         ndk.explicitRelayUrls.push(...Array.from(userProfile.relays).filter(relay => !ndk.explicitRelayUrls.includes(relay)));
+
+        // connect to the relays
+        await ndk.connect();
+        console.log('User connected to relays:', ndk.explicitRelayUrls);
 
         // Stringify with custom replacer for Set
         localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userProfile, (key, value) => {

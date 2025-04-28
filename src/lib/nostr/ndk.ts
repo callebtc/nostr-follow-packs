@@ -1,6 +1,6 @@
 import NDK, { NDKEvent, NDKNip07Signer } from '@nostr-dev-kit/ndk';
 import { browser } from '$app/environment';
-import { user } from '$lib/stores/user';
+import { loadUser, user } from '$lib/stores/user';
 import { get } from 'svelte/store';
 // Debug logging
 const DEBUG = true;
@@ -26,8 +26,9 @@ export const ndk = new NDK({
 
 // Only connect in browser environment
 if (browser) {
+    // load user 
     ndk.connect().then(() => {
-        logDebug('Connected to relays:', DEFAULT_RELAYS);
+        logDebug('Connected to relays:', ndk.explicitRelayUrls);
     }).catch(err => {
         console.error('Failed to connect to relays:', err);
         logDebug('Failed to connect to relays:', err);

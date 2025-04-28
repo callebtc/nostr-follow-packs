@@ -19,6 +19,10 @@ if (!fs.existsSync(CACHE_DIR)) {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+    // TODO: our code gets stuck at ndk.connect() on ubuntu. until then we return
+    return resolve(event);
+
+
     const url = new URL(event.request.url);
     const pathname = url.pathname;
 

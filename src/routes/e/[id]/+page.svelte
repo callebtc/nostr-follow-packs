@@ -238,23 +238,26 @@
       <div class="bg-white rounded-lg shadow-sm overflow-hidden people-container">
         <ul class="divide-y divide-gray-200">
           {#each followList.entries as entry}
-            <li class="p-4 sm:p-6 flex items-center justify-between">
-              <div class="flex items-center">
+            <li class="p-4 sm:p-6 flex items-start justify-between">
+              <div class="flex items-start">
                 <img 
                   src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                   alt={entry.name || 'User'} 
                   class="w-10 h-10 rounded-full mr-4"
+                  style="margin-top: 0.5rem !important;"
                 />
                 
                 <div>
-                  <h3 class="text-lg font-medium text-gray-900">{entry.name || 'Unknown User'}
+                  <h3 class="text-lg font-medium text-gray-900">
+                    {entry.name || 'Unknown User'}
                     {#if entry.nip05}
                       <span class="text-xs text-gray-500 hover:text-gray-700 transition">
                         {entry.nip05}
                       </span>
                     {/if}
+                    <span class="text-xs text-gray-500 ml-1"><PublicKeyDisplay pubkey={entry.pubkey} /></span>
                   </h3>
-                  <PublicKeyDisplay pubkey={entry.pubkey} />
+                  
                   {#if entry.bio}
                     <p class="text-sm font-normal text-gray-600 mt-1">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
                   {/if}

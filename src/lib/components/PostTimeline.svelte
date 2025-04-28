@@ -145,10 +145,11 @@
               src={post.profile.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
               alt={post.profile.name || 'User'} 
               class="w-10 h-10 rounded-full mr-4"
+              style="margin-top: 0.5rem !important;"
             />
             
             <div class="flex-grow">
-              <h3 class="text-lg font-medium text-gray-900">
+              <h3 class="text-lg font-medium text-gray-900 mt-1">
                 {post.profile.name || 'Unknown User'}
                 {#if post.profile.nip05}
                   <span class="text-xs text-gray-500 hover:text-gray-700 transition">

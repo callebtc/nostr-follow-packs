@@ -126,10 +126,10 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
 
         // Draw profile pictures in a grid
         const maxProfiles = Math.min(6, followList.entries.length);
-        const profileSize = 160;
+        const profileSize = 180;
         const spacing = -10;
         const startX = (width - (maxProfiles * (profileSize + spacing) - spacing)) / 2;
-        const startY = 120;
+        const startY = 130;
 
         // Load and draw profile images in parallel
         await Promise.all(profiles.map(async (profile, index) => {

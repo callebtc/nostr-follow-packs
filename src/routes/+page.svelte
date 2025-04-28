@@ -156,7 +156,7 @@
                 {/each}
                 
                 {#if list.entries.length > 5}
-                  <div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600">
+                  <div class="mt-2 w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600">
                     +{list.entries.length - 5}
                   </div>
                 {/if}

@@ -19,66 +19,115 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // Fill background with gradient
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, '#6366f1');  // indigo-500
-    gradient.addColorStop(1, '#8b5cf6');  // purple-500
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    // top text
-    ctx.font = 'bold 40px Manrope, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText('NOSTR FOLLOW PACK', width / 2, 80, width - 100);
-
-    // Add the list name
-    ctx.font = 'bold 80px Manrope, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText(followList.name, width / 2, 400, width - 100);
-
-    // Add description if available
-    if (followList.description && false) {
-        ctx.font = '30px Manrope, sans-serif';
-        ctx.fillStyle = '#f0f0f0';
-
-        // Wrap text to multiple lines if needed
-        const words = followList.description.split(' ');
-        let line = '';
-        let y = 460;
-        const maxWidth = width - 200;
-        const lineHeight = 40;
-
-        for (let i = 0; i < words.length; i++) {
-            const testLine = line + words[i] + ' ';
-            const metrics = ctx.measureText(testLine);
-
-            if (metrics.width > maxWidth && i > 0) {
-                ctx.fillText(line, width / 2, y, maxWidth);
-                line = words[i] + ' ';
-                y += lineHeight;
-
-                // Limit to 3 lines
-                if (y > 460 + 2 * lineHeight) break;
-            } else {
-                line = testLine;
-            }
-        }
-        ctx.fillText(line, width / 2, y, maxWidth);
-    }
-
-    // Draw profile pictures in a grid
-    const maxProfiles = Math.min(6, followList.entries.length);
-    const profileSize = 160;
-    const spacing = -10;
-    const startX = (width - (maxProfiles * (profileSize + spacing) - spacing)) / 2;
-    const startY = 120;
-
-    const profiles = followList.entries.slice(0, maxProfiles);
+    // Load profile images first for background tiling
+    const profiles = followList.entries.slice(0, MAX_PREVIEW_ENTRIES);
     const defaultImage = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+    const profileImages = [];
 
     try {
+        // Load images for background tiling
+        for (const profile of profiles) {
+            try {
+                const imageUrl = profile.picture || defaultImage;
+                const profileImg = await loadImage(imageUrl);
+                profileImages.push(profileImg);
+            } catch (error) {
+                console.error(`Error loading profile image for ${profile.pubkey}:`, error);
+            }
+        }
+
+        // If no images loaded, use default
+        if (profileImages.length === 0) {
+            const defaultImg = await loadImage(defaultImage);
+            profileImages.push(defaultImg);
+        }
+
+        // Draw tiled background with low opacity
+        const tileSize = 120;
+        ctx.save();
+        ctx.globalAlpha = 0.28; // Very light alpha
+
+        // Calculate number of tiles needed to cover the canvas
+        const tilesX = Math.ceil(width / tileSize);
+        const tilesY = Math.ceil(height / tileSize);
+
+        for (let y = 0; y < tilesY; y++) {
+            for (let x = 0; x < tilesX; x++) {
+                const img = profileImages[Math.floor(Math.random() * profileImages.length)];
+                // Create circular clipping path for each tile
+                ctx.save();
+                ctx.beginPath();
+                const centerX = x * tileSize + tileSize / 2;
+                const centerY = y * tileSize + tileSize / 2;
+                ctx.arc(centerX, centerY, tileSize / 2, 0, Math.PI * 2, true);
+                ctx.closePath();
+                ctx.clip();
+
+                // Draw the profile image
+                ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
+                ctx.restore();
+            }
+        }
+        ctx.restore();
+
+        // Fill background with gradient on top of the tiled images
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, '#6366f1');  // indigo-500
+        gradient.addColorStop(1, '#8b5cf6');  // purple-500
+        ctx.globalAlpha = 0.9; // Slightly transparent to let background show through
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        ctx.globalAlpha = 1.0; // Reset alpha for subsequent drawing operations
+
+        // top text
+        ctx.font = 'bold 40px Manrope, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText('NOSTR FOLLOW PACK', width / 2, 80, width - 100);
+
+        // Add the list name
+        ctx.font = 'bold 80px Manrope, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(followList.name, width / 2, 400, width - 100);
+
+        // Add description if available
+        if (followList.description && false) {
+            ctx.font = '30px Manrope, sans-serif';
+            ctx.fillStyle = '#f0f0f0';
+
+            // Wrap text to multiple lines if needed
+            const words = followList.description?.split(' ') || [];
+            let line = '';
+            let y = 460;
+            const maxWidth = width - 200;
+            const lineHeight = 40;
+
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i] + ' ';
+                const metrics = ctx.measureText(testLine);
+
+                if (metrics.width > maxWidth && i > 0) {
+                    ctx.fillText(line, width / 2, y, maxWidth);
+                    line = words[i] + ' ';
+                    y += lineHeight;
+
+                    // Limit to 3 lines
+                    if (y > 460 + 2 * lineHeight) break;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, width / 2, y, maxWidth);
+        }
+
+        // Draw profile pictures in a grid
+        const maxProfiles = Math.min(6, followList.entries.length);
+        const profileSize = 160;
+        const spacing = -10;
+        const startX = (width - (maxProfiles * (profileSize + spacing) - spacing)) / 2;
+        const startY = 120;
+
         // Load and draw profile images in parallel
         await Promise.all(profiles.map(async (profile, index) => {
             try {
@@ -117,7 +166,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         ctx.font = 'bold 40px Manrope, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(`${followList.entries.length} people to follow`, width / 2, height - 155);
+        ctx.fillText(`${followList.entries.length} people to follow`, width / 2, height - 160);
 
         // Draw "on Nostr" with the logo
         ctx.font = 'bold 50px Manrope, sans-serif';

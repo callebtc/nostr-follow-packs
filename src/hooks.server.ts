@@ -34,9 +34,10 @@ export const handle: Handle = async ({ event, resolve }) => {
         if (isCrawler) {
             try {
                 // Fetch the follow list data
+                console.log('Connecting to relays');
                 ndk.connect();
                 const followList = await getFollowListById(listId);
-
+                console.log('Follow list:', followList);
                 if (followList) {
                     // Load profile information for the first few entries
                     const MAX_PREVIEW_ENTRIES = 5;
@@ -57,6 +58,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
                     // Generate the image if it doesn't exist or is too old
                     if (!imageExists) {
+                        console.log('Generating image');
                         await generatePreviewImage(listWithProfiles, cachePath);
                     }
 

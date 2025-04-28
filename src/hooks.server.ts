@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { generatePreviewImage } from '$lib/services/preview-image.service';
 import { getFollowListById, getProfileInfoForEntries } from '$lib/services/follow-list.service';
+import { ndk } from '$lib/nostr/ndk';
 
 // Get the directory name for the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         if (isCrawler) {
             try {
                 // Fetch the follow list data
+                ndk.connect();
                 const followList = await getFollowListById(listId);
 
                 if (followList) {

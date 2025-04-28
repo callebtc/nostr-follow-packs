@@ -22,7 +22,37 @@ export const DEFAULT_RELAYS = [
 export const ndk = new NDK({
     explicitRelayUrls: DEFAULT_RELAYS,
     enableOutboxModel: false, // We'll handle publishing manually
+    // Add these to make it more resilient on server
+    autoConnectUserRelays: false,
+    autoFetchUserMutelist: false,
 });
+
+/**
+ * Connect to NDK with timeout to prevent hanging
+ */
+export const connectWithTimeout = async (timeoutMs = 10000) => {
+    return new Promise(async (resolve, reject) => {
+        // Create a timeout that will reject if connection takes too long
+        const timeout = setTimeout(() => {
+            logDebug('NDK connection timeout after', timeoutMs, 'ms');
+            // Don't reject - just resolve with false to indicate timeout
+            resolve(false);
+        }, timeoutMs);
+
+        try {
+            await ndk.connect();
+            clearTimeout(timeout);
+            logDebug('[ndk connect] Connected to relays:', ndk.explicitRelayUrls);
+            resolve(true);
+        } catch (err) {
+            clearTimeout(timeout);
+            console.error('Failed to connect to relays:', err);
+            logDebug('Failed to connect to relays:', err);
+            // Still resolve but with false to indicate failure
+            resolve(false);
+        }
+    });
+};
 
 // Only connect in browser environment
 if (browser) {

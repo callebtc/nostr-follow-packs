@@ -1,4 +1,4 @@
-import { ndk } from '$lib/nostr/ndk';
+import { ndk, connectWithTimeout } from '$lib/nostr/ndk';
 import { NDKEvent } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
@@ -130,12 +130,37 @@ export async function getFollowListById(id: string): Promise<FollowList | null> 
     logDebug('Fetching follow list by ID:', id);
 
     try {
+        // Make sure we're connected, with a 5s timeout
+        if (ndk.pool.connectedRelays().length === 0) {
+            logDebug('No connected relays, connecting with timeout...');
+            const connected = await connectWithTimeout(5000);
+            if (!connected) {
+                logDebug('Failed to connect to relays within timeout');
+            }
+        }
+
         // Fetch the specific event by ID
         const filter = { ids: [id] };
         logDebug('Fetching with filter:', filter);
         logDebug('Current relays:', ndk.explicitRelayUrls);
 
-        const events = await ndk.fetchEvents(filter);
+        // Add a timeout to the fetch operation as well
+        let events: Set<NDKEvent>;
+        const fetchPromise = ndk.fetchEvents(filter);
+
+        try {
+            events = await Promise.race([
+                fetchPromise,
+                new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Fetch timeout')), 5000)
+                )
+            ]);
+        } catch (error) {
+            console.error('Error or timeout fetching events:', error);
+            logDebug('Error or timeout fetching events:', error);
+            return null;
+        }
+
         const eventsArray = Array.from(events);
         logDebug(`Fetched ${eventsArray.length} events`);
 

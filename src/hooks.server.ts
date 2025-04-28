@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { generatePreviewImage } from '$lib/services/preview-image.service';
 import { getFollowListById, getProfileInfoForEntries } from '$lib/services/follow-list.service';
-import { ndk } from '$lib/nostr/ndk';
+import { ndk, connectWithTimeout } from '$lib/nostr/ndk';
 import type { FollowList } from '$lib/types/follow-list';
 
 // Get the directory name for the current module
@@ -53,15 +53,25 @@ export const handle: Handle = async ({ event, resolve }) => {
                 let followList: FollowList | null = null;
                 // test: fetch 
                 if (!metadataExists) {
-                    // Fetch the follow list data
+                    // Fetch the follow list data with timeout
                     console.log('[!metadataExists] Connecting to relays');
-                    const res = await fetch('https://api.ipify.org?format=json');
-                    const data = await res.json();
-                    console.log('[!metadataExists] Server public IP:', data.ip);
-                    await ndk.connect();
-                    followList = await getFollowListById(listId);
-                    if (followList) {
-                        fs.writeFileSync(cacheFollowListMetadataPath, JSON.stringify(followList));
+
+                    // Try to connect with timeout (5 seconds)
+                    const connected = await connectWithTimeout(5000);
+                    console.log('Connected to relays:', connected);
+
+                    if (connected) {
+                        followList = await getFollowListById(listId);
+                        if (followList) {
+                            fs.writeFileSync(cacheFollowListMetadataPath, JSON.stringify(followList));
+                        }
+                    } else {
+                        console.log('Failed to connect to relays, checking for cached data');
+                        // If we have a cached version that's older than 24 hours but exists, use it as fallback
+                        if (fs.existsSync(cacheFollowListMetadataPath)) {
+                            followList = JSON.parse(fs.readFileSync(cacheFollowListMetadataPath, 'utf8'));
+                            console.log('Using cached follow list as fallback');
+                        }
                     }
                 } else {
                     followList = JSON.parse(fs.readFileSync(cacheFollowListMetadataPath, 'utf8'));
@@ -81,15 +91,24 @@ export const handle: Handle = async ({ event, resolve }) => {
                 }
                 if (!imageExists) {
                     // Generate the image if it doesn't exist or is too old
-                    // Fetch the follow list data
                     console.log('[!imageExists] Connecting to relays');
-                    await ndk.connect();
-                    console.log('[!imageExists] Follow list:', followList);
-                    console.log('[!imageExists] Generating image');
-                    // Load profile information for the first few entries
-                    const MAX_PREVIEW_ENTRIES = 5;
-                    const listWithProfiles = await getProfileInfoForEntries(followList, MAX_PREVIEW_ENTRIES);
-                    await generatePreviewImage(listWithProfiles, cachePath);
+
+                    // Try to connect with timeout (5 seconds)
+                    const connected = await connectWithTimeout(5000);
+                    console.log('Connected to relays for profile info:', connected);
+
+                    if (connected) {
+                        console.log('[!imageExists] Follow list:', followList);
+                        console.log('[!imageExists] Generating image');
+                        // Load profile information for the first few entries
+                        const MAX_PREVIEW_ENTRIES = 5;
+                        const listWithProfiles = await getProfileInfoForEntries(followList, MAX_PREVIEW_ENTRIES);
+                        await generatePreviewImage(listWithProfiles, cachePath);
+                    } else {
+                        // If we can't connect, generate image with what we have
+                        console.log('Failed to connect for profiles, generating image with existing data');
+                        await generatePreviewImage(followList, cachePath);
+                    }
                 }
                 // Modify the response to include meta tags for social media
                 const response = await resolve(event);

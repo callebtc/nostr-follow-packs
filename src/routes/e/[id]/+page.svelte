@@ -7,12 +7,15 @@
   import { goto } from '$app/navigation';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
+  import PostTimeline from '$lib/components/PostTimeline.svelte';
+  
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
   let success = '';
   let copying = '';
   let followingAll = false;
+  let activeTab = 'people'; // Default active tab
 
   onMount(async () => {
     try {
@@ -144,9 +147,13 @@
       copying = '';
     }
   }
+
+  function setActiveTab(tab: string) {
+    activeTab = tab;
+  }
 </script>
 
-<div class="container py-10">
+<div class="container py-10 people-container">
   <!-- Loading state -->
   {#if loading}
     <div class="flex justify-center py-12">
@@ -223,68 +230,98 @@
       </div>
     {/if}
     
-    <!-- User list -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-      <ul class="divide-y divide-gray-200">
-        {#each followList.entries as entry}
-          <li class="p-4 sm:p-6 flex items-center justify-between">
-            <div class="flex items-center">
-              <img 
-                src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                alt={entry.name || 'User'} 
-                class="w-10 h-10 rounded-full mr-4"
-              />
-              
-              <div>
-                <h3 class="text-lg font-medium text-gray-900">{entry.name || 'Unknown User'}
-                  {#if entry.nip05}
-                    <span class="text-xs text-gray-500 hover:text-gray-700 transition">
-                      {entry.nip05}
-                    </span>
-                  {/if}
-                </h3>
-                <button 
-                  on:click={() => copyNpub(entry.pubkey)}
-                  class="text-xs text-gray-500 hover:text-gray-700 transition"
-                >
-                  {#if copying === entry.pubkey}
-                    <span class="text-green-600">Copied!</span>
-                  {:else}
-                    {entry.pubkey.substring(0, 8)}...{entry.pubkey.substring(entry.pubkey.length - 8)}
-                  {/if}
-                </button>
-                {#if entry.bio}
-                  <p class="text-sm font-normal text-gray-600 mt-1">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
-                {/if}
-              </div>
-            </div>
-            
-            {#if $user}
-              {#if isFollowing(entry.pubkey)}
-                <button 
-                  on:click={() => handleUnfollow(entry)}
-                  class="btn btn-outline"
-                >
-                  Following
-                </button>
-              {:else}
-                <button 
-                  on:click={() => handleFollow(entry)}
-                  class="btn btn-primary"
-                >
-                  Follow
-                </button>
-              {/if}
-            {/if}
-          </li>
-        {/each}
-        
-        {#if followList.entries.length === 0}
-          <li class="p-6 text-center text-gray-500">
-            This follow list doesn't contain any users.
-          </li>
-        {/if}
-      </ul>
+    <!-- Tab selector -->
+    <div class="mb-6 bg-white rounded-lg shadow-sm overflow-hidden people-container">
+      <div class="flex justify-center border-b border-gray-200">
+        <button 
+          class="py-4 px-6 text-center text-gray-700 {activeTab === 'people' ? 'font-bold border-b-2 border-purple-500' : 'font-medium'}"
+          on:click={() => setActiveTab('people')}
+        >
+          People
+        </button>
+        <button 
+          class="py-4 px-6 text-center text-gray-700 {activeTab === 'posts' ? 'font-bold border-b-2 border-purple-500' : 'font-medium'}"
+          on:click={() => setActiveTab('posts')}
+        >
+          Posts
+        </button>
+      </div>
     </div>
+    
+    {#if activeTab === 'people'}
+      <!-- User list -->
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden people-container">
+        <ul class="divide-y divide-gray-200">
+          {#each followList.entries as entry}
+            <li class="p-4 sm:p-6 flex items-center justify-between">
+              <div class="flex items-center">
+                <img 
+                  src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                  alt={entry.name || 'User'} 
+                  class="w-10 h-10 rounded-full mr-4"
+                />
+                
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900">{entry.name || 'Unknown User'}
+                    {#if entry.nip05}
+                      <span class="text-xs text-gray-500 hover:text-gray-700 transition">
+                        {entry.nip05}
+                      </span>
+                    {/if}
+                  </h3>
+                  <button 
+                    on:click={() => copyNpub(entry.pubkey)}
+                    class="text-xs text-gray-500 hover:text-gray-700 transition"
+                  >
+                    {#if copying === entry.pubkey}
+                      <span class="text-green-600">Copied!</span>
+                    {:else}
+                      {entry.pubkey.substring(0, 8)}...{entry.pubkey.substring(entry.pubkey.length - 8)}
+                    {/if}
+                  </button>
+                  {#if entry.bio}
+                    <p class="text-sm font-normal text-gray-600 mt-1">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
+                  {/if}
+                </div>
+              </div>
+              
+              {#if $user}
+                {#if isFollowing(entry.pubkey)}
+                  <button 
+                    on:click={() => handleUnfollow(entry)}
+                    class="btn btn-outline"
+                  >
+                    Following
+                  </button>
+                {:else}
+                  <button 
+                    on:click={() => handleFollow(entry)}
+                    class="btn btn-primary"
+                  >
+                    Follow
+                  </button>
+                {/if}
+              {/if}
+            </li>
+          {/each}
+          
+          {#if followList.entries.length === 0}
+            <li class="p-6 text-center text-gray-500">
+              This follow list doesn't contain any users.
+            </li>
+          {/if}
+        </ul>
+      </div>
+    {:else}
+      <!-- Post timeline -->
+      <PostTimeline pubkeys={followList.entries.map(entry => entry.pubkey)} entries={followList.entries} />
+    {/if}
   {/if}
 </div> 
+
+<style>
+  .people-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+</style>

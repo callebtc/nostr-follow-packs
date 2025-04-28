@@ -9,7 +9,7 @@ import type {
     FollowList,
     FollowListEntry
 } from '$lib/types/follow-list';
-import { getProfileByPubkey, user } from '$lib/stores/user';
+import { getProfileByPubkey, loadUser, user } from '$lib/stores/user';
 import { get } from 'svelte/store';
 
 export const LIST_LIMIT = 20;
@@ -24,12 +24,21 @@ const logDebug = (...args: any[]) => {
  * Get a list of the most recent follow lists from relays
  */
 export async function getFollowLists(limit: number = LIST_LIMIT, since?: number, until?: number): Promise<FollowList[]> {
+    // ensure that user is loaded 
+    try {
+        await loadUser();
+    } catch (error) {
+        console.error('Error loading user:', error);
+        logDebug('Error loading user:', error);
+    }
+
     logDebug('Fetching follow lists, limit:', limit);
 
     try {
         // Fetch follow list events from relays
         const filter = { kinds: [FOLLOW_LIST_KIND], limit, since, until };
         logDebug('Fetching with filter:', filter);
+        logDebug('Current relays', ndk.explicitRelayUrls.length, ndk.explicitRelayUrls);
 
         const events = await ndk.fetchEvents(filter);
         const eventsArray = Array.from(events);
@@ -88,12 +97,21 @@ export async function getProfileInfoForEntries(list: FollowList, maxEntries: num
  * Get a single follow list by its event ID
  */
 export async function getFollowListById(id: string): Promise<FollowList | null> {
+    // ensure that user is loaded 
+    try {
+        await loadUser();
+    } catch (error) {
+        console.error('Error loading user:', error);
+        logDebug('Error loading user:', error);
+    }
+
     logDebug('Fetching follow list by ID:', id);
 
     try {
         // Fetch the specific event by ID
         const filter = { ids: [id] };
         logDebug('Fetching with filter:', filter);
+        logDebug('Current relays:', ndk.explicitRelayUrls);
 
         const events = await ndk.fetchEvents(filter);
         const eventsArray = Array.from(events);

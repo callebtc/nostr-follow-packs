@@ -167,8 +167,8 @@ export async function loadUser(): Promise<void> {
         // Save the user profile to the store and cache
         user.set(userProfile);
 
-        // update the global ndk instance with the new relays
-        ndk.explicitRelayUrls = Array.from(userProfile.relays);
+        // append the global ndk instance with relays that are not already in the array
+        ndk.explicitRelayUrls.push(...Array.from(userProfile.relays).filter(relay => !ndk.explicitRelayUrls.includes(relay)));
 
         // Stringify with custom replacer for Set
         localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userProfile, (key, value) => {

@@ -53,7 +53,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                 let followList: FollowList | null = null;
                 if (!metadataExists) {
                     // Fetch the follow list data
-                    console.log('Connecting to relays');
+                    console.log('[!metadataExists] Connecting to relays');
                     await ndk.connect();
                     followList = await getFollowListById(listId);
                     if (followList) {
@@ -78,10 +78,10 @@ export const handle: Handle = async ({ event, resolve }) => {
                 if (!imageExists) {
                     // Generate the image if it doesn't exist or is too old
                     // Fetch the follow list data
-                    console.log('Connecting to relays');
+                    console.log('[!imageExists] Connecting to relays');
                     await ndk.connect();
-                    console.log('Follow list:', followList);
-                    console.log('Generating image');
+                    console.log('[!imageExists] Follow list:', followList);
+                    console.log('[!imageExists] Generating image');
                     // Load profile information for the first few entries
                     const MAX_PREVIEW_ENTRIES = 5;
                     const listWithProfiles = await getProfileInfoForEntries(followList, MAX_PREVIEW_ENTRIES);

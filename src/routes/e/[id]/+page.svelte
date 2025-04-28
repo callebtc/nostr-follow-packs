@@ -193,7 +193,7 @@
                 alt={followList.authorName || 'Author'} 
                 class="w-6 h-6 rounded-full mr-2"
               />
-              <div class="flex mt-2">
+              <div class="flex">
               <span class="text-gray-600">Created by {followList.authorName || 'Unknown'} · {getRelativeTime(followList.createdAt)}</span>
               <p class="ml-2">
                 <button 

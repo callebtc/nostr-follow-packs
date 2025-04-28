@@ -80,7 +80,7 @@ export async function getProfileInfoForEntries(list: FollowList, maxEntries: num
             const entry = list.entries[i];
             const profile = await getProfileByPubkey(entry.pubkey);
             // Create a new entry object to trigger reactivity
-            const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05, nip05Verified: profile.nip05Verified };
+            const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05, nip05Verified: profile.nip05Verified } as FollowListEntry;
             // Replace the entry in the array with the new object
             list.entries[i] = updatedEntry;
             // Force the component to update by replacing the entire list reference

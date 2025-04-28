@@ -143,7 +143,7 @@ export async function loadUserProfile() {
     const userProfile: UserProfile = {
         pubkey,
         name: ndkUser.profile?.name || ndkUser.profile?.displayName,
-        picture: ndkUser.profile?.picture as string | undefined,
+        picture: ndkUser.profile?.picture as string || ndkUser.profile?.image as string,
         about: ndkUser.profile?.about,
         npub: ndkUser.npub,
         following: new Set<string>(),
@@ -237,7 +237,7 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
 
         const profile = {
             name: ndkUser.profile?.name || ndkUser.profile?.displayName,
-            picture: ndkUser.profile?.picture as string | undefined,
+            picture: ndkUser.profile?.picture as string || ndkUser.profile?.image as string,
             bio: ndkUser.profile?.about,
             nip05: ndkUser.profile?.nip05,
             nip05Verified: false

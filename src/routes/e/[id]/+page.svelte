@@ -17,6 +17,29 @@
   let followingAll = false;
   let activeTab = 'people'; // Default active tab
 
+  // Function to load profile for a specific entry
+  async function loadProfileForEntry(entryIndex: number) {
+    if (!followList) return;
+    
+    try {
+      // Call getProfileInfoForEntries with a single entry index
+      const updatedList = await getProfileInfoForEntries(
+        { ...followList, entries: [...followList.entries] }, // Clone to avoid mutation
+        undefined,
+        entryIndex
+      );
+      
+      if (updatedList && followList) {
+        // Update just this one entry
+        followList.entries[entryIndex] = updatedList.entries[entryIndex];
+        // Force reactivity by reassigning
+        followList = { ...followList };
+      }
+    } catch (error) {
+      console.error(`Error loading profile for entry ${entryIndex}:`, error);
+    }
+  }
+
   onMount(async () => {
     try {
       // Get the list ID from the URL
@@ -26,26 +49,33 @@
         return;
       }
       // load the user
-      loadUser()
+      loadUser();
+      
       // Fetch the follow list
       followList = await getFollowListById(listId);
       if (!followList) {
         error = true;
+        return;
       }
-      // Fetch profile information for each preview user in each list
+      
+      // Mark as loaded to show UI immediately
+      loading = false;
+      
+      // Load author profile first
+      const listWithAuthor = await getAuthorProfile(followList);
+      if (listWithAuthor) {
+        followList = listWithAuthor;
+      }
+      
+      // Load profiles for entries one by one for better reactivity
       if (followList) {
-        followList = await getAuthorProfile(followList);
-        // Load profile info reactively
-        getProfileInfoForEntries(followList).then(updatedList => {
-          if (updatedList) {
-            followList = updatedList;
-          }
-        });
+        for (let i = 0; i < followList.entries.length; i++) {
+          loadProfileForEntry(i);
+        }
       }
     } catch (err) {
       console.error('Error fetching follow list:', err);
       error = true;
-    } finally {
       loading = false;
     }
   });

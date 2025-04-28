@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { user, followUsers, unfollowUsers } from '$lib/stores/user';
+  import { user, followUsers, unfollowUsers, loadUser } from '$lib/stores/user';
   import { getFollowListById, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
   import { hexToNpub } from '$lib/services/vertex-search';
   import { goto } from '$app/navigation';
@@ -25,7 +25,8 @@
         error = true;
         return;
       }
-
+      // load the user
+      loadUser()
       // Fetch the follow list
       followList = await getFollowListById(listId);
       if (!followList) {
@@ -74,10 +75,10 @@
     
     try {
       const result = await followUsers([entry.pubkey]);
-      if (result) {
-        success = `You are now following ${entry.name || 'this user'}`;
-        setTimeout(() => { success = ''; }, 5000);
-      }
+      // if (result) {
+      //   success = `You are now following ${entry.name || 'this user'}`;
+      //   setTimeout(() => { success = ''; }, 5000);
+      // }
     } catch (err) {
       console.error('Error following user:', err);
     }
@@ -89,10 +90,10 @@
     
     try {
       const result = await unfollowUsers([entry.pubkey]);
-      if (result) {
-        success = `You are no longer following ${entry.name || 'this user'}`;
-        setTimeout(() => { success = ''; }, 5000);
-      }
+      // if (result) {
+      //   success = `You are no longer following ${entry.name || 'this user'}`;
+      //   setTimeout(() => { success = ''; }, 5000);
+      // }
     } catch (err) {
       console.error('Error unfollowing user:', err);
     }

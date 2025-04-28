@@ -50,8 +50,8 @@
   <header class="bg-white shadow-sm">
     <div class="container py-4 flex justify-between items-center">
       <div class="flex items-center">
-        <a href="/"><img src="/sheep.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;"></a> 
-        <a href="/" class="text-2xl font-bold text-grey-600 hidden sm:inline">Following._</a>
+        <a class="hidden sm:inline"href="/"><img src="/farm.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;"></a> 
+        <a href="/" class="text-2xl font-bold text-grey-600">Following._</a>
       </div>
       <div>
         {#if $user}

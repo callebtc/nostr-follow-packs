@@ -261,12 +261,28 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
             timestamp: Date.now()
         }));
 
+        // clean up profiles from localStorage
+        cleanUpProfilesFromLocalStorage();
+
         return profile;
     } catch (error) {
         console.error(`Error fetching profile for ${pubkey}:`, error);
         return {};
     }
 }
+
+async function cleanUpProfilesFromLocalStorage() {
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith(PROFILE_CACHE_PREFIX));
+    for (const key of cacheKeys) {
+        const { timestamp } = JSON.parse(localStorage.getItem(key) || '{}');
+        if (now - timestamp > sevenDays) {
+            localStorage.removeItem(key);
+        }
+    }
+}
+
 
 /**
  * Check if a NIP-05 domain is verified

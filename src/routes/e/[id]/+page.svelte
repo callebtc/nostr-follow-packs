@@ -232,7 +232,7 @@
     
     <!-- Tab selector -->
     <div class="mb-6 bg-white rounded-lg shadow-sm overflow-hidden people-container">
-      <div class="flex justify-center border-b border-gray-200">
+      <div class="grid grid-cols-2 border-b border-gray-200">
         <button 
           class="py-4 px-6 text-center text-gray-700 {activeTab === 'people' ? 'font-bold border-b-2 border-purple-500' : 'font-medium'}"
           on:click={() => setActiveTab('people')}

@@ -1,7 +1,8 @@
+import { ndk } from "$lib/nostr/ndk";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 // The constant for our custom follow list event kind (replaceable)
-export const FOLLOW_LIST_KIND = 39089;
+export const FOLLOW_LIST_KIND = 39088;
 
 export interface FollowListEntry {
     pubkey: string;
@@ -82,8 +83,8 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
 /**
  * Create a follow list event from a FollowList object
  */
-export function createFollowListEvent(followList: Omit<FollowList, 'eventId' | 'createdAt' | 'authorName' | 'authorPicture'>): NDKEvent {
-    const event = new NDKEvent();
+export async function createFollowListEvent(followList: Omit<FollowList, 'eventId' | 'createdAt' | 'authorName' | 'authorPicture'>): Promise<NDKEvent> {
+    const event = new NDKEvent(ndk);
 
     // Set the kind
     event.kind = FOLLOW_LIST_KIND;

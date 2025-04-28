@@ -1,4 +1,4 @@
-import { ndk, getNdkWithSigner } from '$lib/nostr/ndk';
+import { ndk } from '$lib/nostr/ndk';
 import { NDKEvent, type NDKFilter } from '@nostr-dev-kit/ndk';
 import { getProfileByPubkey } from '$lib/stores/user';
 
@@ -42,12 +42,9 @@ export async function searchUsers(query: string): Promise<VertexSearchResult[]> 
     }
 
     try {
-        // Get the NDK instance with signer
-        const signerNdk = await getNdkWithSigner();
-        logDebug('Got signer NDK instance');
 
         // Create a DVM request event (NIP-90)
-        const searchEvent = new NDKEvent(signerNdk);
+        const searchEvent = new NDKEvent(ndk);
         searchEvent.kind = VERTEX_SEARCH_REQUEST_KIND;
         searchEvent.content = '';
         searchEvent.tags = [

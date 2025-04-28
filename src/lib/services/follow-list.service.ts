@@ -1,4 +1,4 @@
-import { ndk, getNdkWithSigner, DEFAULT_RELAYS, publishEvent } from '$lib/nostr/ndk';
+import { ndk } from '$lib/nostr/ndk';
 import { NDKEvent } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
@@ -169,10 +169,6 @@ export async function publishFollowList(
         const currentUser = get(user);
         if (!currentUser) throw new Error('No logged in user');
 
-        // Make sure we have a signer
-        const signerNdk = await getNdkWithSigner();
-        logDebug('Got signer NDK instance');
-
         // if id is not set, generate a new one
         if (!id) {
             id = crypto.randomUUID();
@@ -188,33 +184,20 @@ export async function publishFollowList(
             description
         };
 
-        const event = createFollowListEvent(followList);
-        event.ndk = signerNdk;
+        const event = await createFollowListEvent(followList);
         logDebug('Created event:', { kind: event.kind, tags: event.tags, content: event.content });
 
         // Sign and publish the event
         await event.sign();
         logDebug('Signed event with ID:', event.id);
 
-        // await event.publish();
-        // logDebug('Published event successfully');
-
-        // Publish to each relay individually
-        // const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
-        // for (const relayUrl of allRelays) {
-        //     try {
-        //         const relay = await signerNdk.pool.getRelay(relayUrl);
-        //         await relay.publish(event);
-        //         logDebug(`Published to ${relayUrl}`);
-        //     } catch (err) {
-        //         logDebug(`Failed to publish to ${relayUrl}:`, err);
-        //     }
-        // }
-        const ok = await publishEvent(event);
-        if (!ok) {
-            logDebug('Failed to publish event');
-            return null;
+        if (ndk.pool.connectedRelays().length === 0) {
+            logDebug('No connected relays, connecting...');
+            await ndk.connect();
         }
+        event.ndk = ndk;
+        await event.publish();
+
         return event.id;
     } catch (error) {
         console.error('Error publishing follow list:', error);
@@ -234,14 +217,9 @@ export async function deleteFollowList(id: string, eventId: string): Promise<boo
         const currentUser = get(user);
         if (!currentUser) throw new Error('No logged in user');
 
-        // Make sure we have a signer
-        const signerNdk = await getNdkWithSigner();
-        logDebug('Got signer NDK instance');
-
         // Create deletion event (kind 5)
-        const event = new NDKEvent();
+        const event = new NDKEvent(ndk);
         event.kind = 5; // Deletion request
-        event.ndk = signerNdk;
 
         // Get the current user's pubkey
         const userPubkey = await (window as any).nostr.getPublicKey();
@@ -262,7 +240,7 @@ export async function deleteFollowList(id: string, eventId: string): Promise<boo
         await event.sign();
         logDebug('Signed deletion event with ID:', event.id);
 
-        await publishEvent(event);
+        await event.publish();
 
         return true;
     } catch (error) {

@@ -183,7 +183,8 @@
         </div>
       {/if}
       
-      <div class="mt-6 flex justify-between items-start">
+      <div class="mt-6 flex flex-col-reverse sm:flex-row justify-between items-start gap-4 sm:gap-0">
+        <!-- text elements -->
         <div>
           <h1 class="text-3xl font-bold text-gray-900">{followList.name}</h1>
           
@@ -193,12 +194,14 @@
                 alt={followList.authorName || 'Author'} 
                 class="w-6 h-6 rounded-full mr-2"
               />
-              <div class="flex">
-              <span class="text-gray-600">Created by {followList.authorName || 'Unknown'} · {getRelativeTime(followList.createdAt)}</span>
-              <p class="ml-2">
+              <span class="text-gray-600">Created by {followList.authorName || 'Unknown'}</span>
+              
+            </div>
+            <div class="flex ml-1 mt-2">
+              <span class="text-xs text-gray-500">{getRelativeTime(followList.createdAt)} · </span>
                 <button 
                   on:click={() => copyNpub(followList?.pubkey || 'Unknown pubkey')}
-                  class="text-xs text-gray-500 hover:text-gray-700 transition"
+                  class="ml-1 text-xs text-gray-500 hover:text-gray-700 transition"
                 >
                   {#if copying === followList?.pubkey}
                     <span class="text-green-600">Copied!</span>
@@ -206,12 +209,11 @@
                     {followList?.pubkey.substring(0, 8)}...{followList?.pubkey.substring(followList?.pubkey.length - 8)}
                   {/if}
                 </button>
-              </p>
-            </div>
             </div>
         </div>
         
-        <div class="flex space-x-2">
+        <!-- button elements -->
+        <div class="flex flex-wrap w-full sm:w-auto justify-end gap-2">
           {#if isAuthor()}
             <button on:click={handleEdit} class="btn btn-primary">Edit List</button>
           {/if}
@@ -224,7 +226,7 @@
               {followingAll ? 'Following...' : 'Follow All'}
             </button>
           {/if}
-          <a href="/" class="btn btn-secondary">Back to Home</a>
+          <a href="/" class="btn btn-secondary">Back Home</a>
         </div>
       </div>
     </div>

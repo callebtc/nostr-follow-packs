@@ -50,7 +50,7 @@
   <header class="bg-white shadow-sm">
     <div class="container py-4 flex justify-between items-center">
       <div class="flex items-center">
-        <img src="/sheep.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;">
+        <a href="/"><img src="/sheep.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;"></a> 
         <a href="/" class="text-2xl font-bold text-purple-600">The Following</a>
       </div>
       <div>

@@ -1,4 +1,4 @@
-import { ndk, getNdkWithSigner, DEFAULT_RELAYS, publishEvent } from '$lib/nostr/ndk';
+import { ndk } from '$lib/nostr/ndk';
 import { NDKEvent } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
@@ -17,7 +17,7 @@ export const LIST_LIMIT = 20;
 // Debug logging configuration
 const DEBUG = true;
 const logDebug = (...args: any[]) => {
-    if (DEBUG) console.log('[Follow List Service]', ...args);
+    if (DEBUG) console.log('[Follow Pack Service]', ...args);
 };
 
 /**
@@ -73,14 +73,36 @@ export async function getAuthorProfile(list: FollowList) {
     return list;
 }
 
-export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined): Promise<FollowList> {
+export async function getProfileInfoForEntries(list: FollowList, maxEntries: number | undefined = undefined, entryIndex?: number): Promise<FollowList> {
+    // If entryIndex is provided, only process that specific entry
+    if (entryIndex !== undefined) {
+        if (entryIndex >= 0 && entryIndex < list.entries.length) {
+            try {
+                const entry = list.entries[entryIndex];
+                const profile = await getProfileByPubkey(entry.pubkey);
+                // Create a new entry object to trigger reactivity
+                const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05, nip05Verified: profile.nip05Verified } as FollowListEntry;
+                // Replace the entry in the array with the new object
+                list.entries[entryIndex] = updatedEntry;
+                // Return updated list
+                return { ...list, entries: [...list.entries] };
+            } catch (err) {
+                console.error(`Error fetching profile for entry at index ${entryIndex}:`, err);
+                logDebug(`Error fetching profile for entry at index ${entryIndex}:`, err);
+                return list;
+            }
+        }
+        return list;
+    }
+
+    // Original functionality (process multiple entries)
     const entriesToLoad = maxEntries ? Math.min(list.entries.length, maxEntries) : list.entries.length;
     for (let i = 0; i < entriesToLoad; i++) {
         try {
             const entry = list.entries[i];
             const profile = await getProfileByPubkey(entry.pubkey);
             // Create a new entry object to trigger reactivity
-            const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05, nip05Verified: profile.nip05Verified };
+            const updatedEntry = { ...entry, name: profile.name, picture: profile.picture, bio: profile.bio, nip05: profile.nip05, nip05Verified: profile.nip05Verified } as FollowListEntry;
             // Replace the entry in the array with the new object
             list.entries[i] = updatedEntry;
             // Force the component to update by replacing the entire list reference
@@ -169,10 +191,6 @@ export async function publishFollowList(
         const currentUser = get(user);
         if (!currentUser) throw new Error('No logged in user');
 
-        // Make sure we have a signer
-        const signerNdk = await getNdkWithSigner();
-        logDebug('Got signer NDK instance');
-
         // if id is not set, generate a new one
         if (!id) {
             id = crypto.randomUUID();
@@ -188,33 +206,20 @@ export async function publishFollowList(
             description
         };
 
-        const event = createFollowListEvent(followList);
-        event.ndk = signerNdk;
+        const event = await createFollowListEvent(followList);
         logDebug('Created event:', { kind: event.kind, tags: event.tags, content: event.content });
 
         // Sign and publish the event
         await event.sign();
         logDebug('Signed event with ID:', event.id);
 
-        // await event.publish();
-        // logDebug('Published event successfully');
-
-        // Publish to each relay individually
-        // const allRelays = new Set([...currentUser.relays, ...DEFAULT_RELAYS]);
-        // for (const relayUrl of allRelays) {
-        //     try {
-        //         const relay = await signerNdk.pool.getRelay(relayUrl);
-        //         await relay.publish(event);
-        //         logDebug(`Published to ${relayUrl}`);
-        //     } catch (err) {
-        //         logDebug(`Failed to publish to ${relayUrl}:`, err);
-        //     }
-        // }
-        const ok = await publishEvent(event);
-        if (!ok) {
-            logDebug('Failed to publish event');
-            return null;
+        if (ndk.pool.connectedRelays().length === 0) {
+            logDebug('No connected relays, connecting...');
+            await ndk.connect();
         }
+        event.ndk = ndk;
+        await event.publish();
+
         return event.id;
     } catch (error) {
         console.error('Error publishing follow list:', error);
@@ -234,14 +239,9 @@ export async function deleteFollowList(id: string, eventId: string): Promise<boo
         const currentUser = get(user);
         if (!currentUser) throw new Error('No logged in user');
 
-        // Make sure we have a signer
-        const signerNdk = await getNdkWithSigner();
-        logDebug('Got signer NDK instance');
-
         // Create deletion event (kind 5)
-        const event = new NDKEvent();
+        const event = new NDKEvent(ndk);
         event.kind = 5; // Deletion request
-        event.ndk = signerNdk;
 
         // Get the current user's pubkey
         const userPubkey = await (window as any).nostr.getPublicKey();
@@ -262,7 +262,7 @@ export async function deleteFollowList(id: string, eventId: string): Promise<boo
         await event.sign();
         logDebug('Signed deletion event with ID:', event.id);
 
-        await publishEvent(event);
+        await event.publish();
 
         return true;
     } catch (error) {

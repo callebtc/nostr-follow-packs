@@ -47,25 +47,56 @@
 
   onMount(async () => {
     try {
+      // Load follow lists first and render them immediately
       followLists = await loadFollowLists();
+      loading = false;
+      
+      // Then load author profiles for each list one by one
       for (let i = 0; i < followLists.length; i++) {
-        followLists[i] = await getAuthorProfile(followLists[i]) || followLists[i];
-        // Update the list with profile info and trigger reactivity
-        getProfileInfoForEntries(followLists[i], 5).then(updatedList => {
-          if (updatedList) {
-            // Force update to specific index
-            followLists[i] = updatedList;
-            // Force reactivity by reassigning the array
-            followLists = [...followLists];
-          }
-        });
+        // Load author profile
+        const listWithAuthor = await getAuthorProfile(followLists[i]);
+        if (listWithAuthor) {
+          followLists[i] = listWithAuthor;
+          // Force reactivity by reassigning the array
+          followLists = [...followLists];
+        }
+        
+        // Load profile info for entries
+        // Use a separate function to process each entry individually
+        loadProfilesForList(i);
       }
     } catch (error) {
       console.error('Error fetching follow lists:', error);
-    } finally {
       loading = false;
     }
   });
+  
+  // Function to load profiles for entries in a specific list
+  async function loadProfilesForList(listIndex: number) {
+    const list = followLists[listIndex];
+    const maxEntries = 5; // Only load first 5 profiles
+    
+    // Load profiles one by one
+    for (let i = 0; i < Math.min(list.entries.length, maxEntries); i++) {
+      try {
+        // Call getProfileInfoForEntries with a single entry index
+        const updatedList = await getProfileInfoForEntries(
+          { ...list, entries: [...list.entries] }, // Clone to avoid mutation
+          undefined, // We're using entryIndex instead
+          i  // Process this specific index
+        );
+        
+        if (updatedList) {
+          // Update just this one entry in our local list
+          followLists[listIndex].entries[i] = updatedList.entries[i];
+          // Force reactivity by reassigning the array
+          followLists = [...followLists];
+        }
+      } catch (error) {
+        console.error(`Error loading profile for entry ${i} in list ${listIndex}:`, error);
+      }
+    }
+  }
 
   function handleCreateClick() {
     goto('/create');
@@ -75,7 +106,7 @@
 <div class="container py-10">
   <!-- Hero section -->
   <div class="text-center mb-12">
-    <h1 class="text-4xl font-bold text-gray-900 mb-4">Nostr Follow Lists</h1>
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">Nostr Follow Packs</h1>
     <p class="text-xl text-gray-600 max-w-2xl mx-auto">
       Discover and share curated lists of Nostr users to follow. Find the users that are most interesting to you or create your own lists.
     </p>
@@ -86,7 +117,7 @@
         class="btn btn-primary text-lg px-6 py-3 {!$user ? 'btn-disabled' : ''}"
         disabled={!$user}
       >
-        Create New Follow List
+        Create New Follow Pack
       </button>
       
       {#if !$user}
@@ -97,7 +128,7 @@
   
   <!-- Browse section -->
   <div class="mt-16">
-    <h2 class="text-2xl font-bold text-gray-900 mb-6">Browse Follow Lists</h2>
+    <h2 class="text-2xl font-bold text-gray-900 mb-6">Browse Follow Packs</h2>
     
     {#if loading}
       <div class="flex justify-center py-12">
@@ -134,16 +165,14 @@
               <h3 class="text-lg font-semibold mb-2">{list.name}</h3>
               
               <!-- Author info -->
-              {#if list.authorName || list.authorPicture}
-                <div class="flex items-center mb-3">
-                  <img 
-                    src={list.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                    alt={list.authorName || 'Author'} 
-                    class="w-5 h-5 rounded-full mr-2"
-                  />
-                  <span class="text-sm text-gray-600">{list.authorName || 'Unknown'}</span>
-                </div>
-              {/if}
+              <div class="flex items-center mb-3">
+                <img 
+                  src={list.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                  alt={list.authorName || 'Author'} 
+                  class="w-5 h-5 rounded-full mr-2"
+                />
+                <span class="text-sm text-gray-600">{list.authorName || 'Unknown User'}</span>
+              </div>
               
               <!-- Preview of users in the list -->
               <div class="flex -space-x-2 overflow-hidden mt-4">
@@ -152,6 +181,7 @@
                     src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                     alt={entry.name || 'User'} 
                     class="w-8 h-8 rounded-full border-2 border-white"
+                    style="margin-top: 0px;"
                   />
                 {/each}
                 

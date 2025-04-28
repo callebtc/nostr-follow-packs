@@ -1,21 +1,44 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { user, followUsers, unfollowUsers } from '$lib/stores/user';
+  import { user, followUsers, loadUser } from '$lib/stores/user';
   import { getFollowListById, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
-  import { hexToNpub } from '$lib/services/vertex-search';
   import { goto } from '$app/navigation';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
   import PostTimeline from '$lib/components/PostTimeline.svelte';
-  
+  import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
+  import FollowButton from '$lib/components/FollowButton.svelte';
+  import { hexToNpub } from '$lib/services/vertex-search';
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
   let success = '';
-  let copying = '';
   let followingAll = false;
   let activeTab = 'people'; // Default active tab
+
+  // Function to load profile for a specific entry
+  async function loadProfileForEntry(entryIndex: number) {
+    if (!followList) return;
+    
+    try {
+      // Call getProfileInfoForEntries with a single entry index
+      const updatedList = await getProfileInfoForEntries(
+        { ...followList, entries: [...followList.entries] }, // Clone to avoid mutation
+        undefined,
+        entryIndex
+      );
+      
+      if (updatedList && followList) {
+        // Update just this one entry
+        followList.entries[entryIndex] = updatedList.entries[entryIndex];
+        // Force reactivity by reassigning
+        followList = { ...followList };
+      }
+    } catch (error) {
+      console.error(`Error loading profile for entry ${entryIndex}:`, error);
+    }
+  }
 
   onMount(async () => {
     try {
@@ -25,26 +48,34 @@
         error = true;
         return;
       }
-
+      // load the user
+      loadUser();
+      
       // Fetch the follow list
       followList = await getFollowListById(listId);
       if (!followList) {
         error = true;
+        return;
       }
-      // Fetch profile information for each preview user in each list
+      
+      // Mark as loaded to show UI immediately
+      loading = false;
+      
+      // Load author profile first
+      const listWithAuthor = await getAuthorProfile(followList);
+      if (listWithAuthor) {
+        followList = listWithAuthor;
+      }
+      
+      // Load profiles for entries one by one for better reactivity
       if (followList) {
-        followList = await getAuthorProfile(followList);
-        // Load profile info reactively
-        getProfileInfoForEntries(followList).then(updatedList => {
-          if (updatedList) {
-            followList = updatedList;
-          }
-        });
+        for (let i = 0; i < followList.entries.length; i++) {
+          loadProfileForEntry(i);
+        }
       }
     } catch (err) {
       console.error('Error fetching follow list:', err);
       error = true;
-    } finally {
       loading = false;
     }
   });
@@ -61,43 +92,6 @@
     goto(`/create?edit=${followList.eventId}`);
   }
 
-  // Check if the current user is following a specific pubkey
-  function isFollowing(pubkey: string): boolean {
-    if (!$user) return false;
-    if (!$user.following || typeof $user.following.has !== 'function') return false;
-    return $user.following.has(pubkey);
-  }
-
-  // Handle following a user
-  async function handleFollow(entry: FollowListEntry) {
-    if (!$user) return;
-    
-    try {
-      const result = await followUsers([entry.pubkey]);
-      if (result) {
-        success = `You are now following ${entry.name || 'this user'}`;
-        setTimeout(() => { success = ''; }, 5000);
-      }
-    } catch (err) {
-      console.error('Error following user:', err);
-    }
-  }
-
-  // Handle unfollowing a user
-  async function handleUnfollow(entry: FollowListEntry) {
-    if (!$user) return;
-    
-    try {
-      const result = await unfollowUsers([entry.pubkey]);
-      if (result) {
-        success = `You are no longer following ${entry.name || 'this user'}`;
-        setTimeout(() => { success = ''; }, 5000);
-      }
-    } catch (err) {
-      console.error('Error unfollowing user:', err);
-    }
-  }
-
   // Handle follow all button click
   async function handleFollowAll() {
     if (!$user || !followList || followingAll) return;
@@ -108,7 +102,7 @@
     try {
       for (const entry of followList.entries) {
         // Skip already followed users
-        if (isFollowing(entry.pubkey)) continue;
+        if ($user.following && $user.following.has(entry.pubkey)) continue;
 
         pubkeysToFollow.push(entry.pubkey);
       }
@@ -133,23 +127,13 @@
     }
   }
 
-  // Copy npub to clipboard
-  async function copyNpub(pubkey: string) {
-    try {
-      copying = pubkey;
-      const npub = await hexToNpub(pubkey);
-      if (npub) {
-        await navigator.clipboard.writeText(npub);
-        setTimeout(() => { copying = ''; }, 1500);
-      }
-    } catch (err) {
-      console.error('Error copying npub:', err);
-      copying = '';
-    }
-  }
-
   function setActiveTab(tab: string) {
     activeTab = tab;
+  }
+
+  async function openProfilePage(pubkey: string) {
+    const npub = await hexToNpub(pubkey);
+    window.open(`https://njump.me/${npub}`, '_blank');
   }
 </script>
 
@@ -163,7 +147,7 @@
   <!-- Error state -->
   {:else if error || !followList}
     <div class="bg-white rounded-lg shadow-sm p-8 text-center">
-      <h2 class="text-2xl font-bold text-gray-900 mb-4">Follow List Not Found</h2>
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Follow Pack Not Found</h2>
       <p class="text-gray-600 mb-6">The follow list you're looking for doesn't exist or could not be loaded.</p>
       <a href="/" class="btn btn-primary">Back to Home</a>
     </div>
@@ -182,23 +166,33 @@
         </div>
       {/if}
       
-      <div class="mt-6 flex justify-between items-start">
+      <div class="mt-6 flex flex-col-reverse sm:flex-row justify-between items-start gap-4 sm:gap-0">
+        <!-- text elements -->
         <div>
           <h1 class="text-3xl font-bold text-gray-900">{followList.name}</h1>
           
-          {#if followList.authorName || followList.authorPicture}
-            <div class="flex items-center mt-2">
+            <div class="flex mt-2">
+              <button on:click={() => openProfilePage(followList?.pubkey || '')}>
               <img 
                 src={followList.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                 alt={followList.authorName || 'Author'} 
                 class="w-6 h-6 rounded-full mr-2"
               />
-              <span class="text-gray-600">Created by {followList.authorName || 'Unknown'} · {getRelativeTime(followList.createdAt)}</span>
+              </button>
+              <button on:click={() => openProfilePage(followList?.pubkey || '')}>
+              <span class="text-gray-600">Created by {followList.authorName || 'Unknown'}</span>
+              </button>
+              
             </div>
-          {/if}
+            <div class="flex ml-1 mt-2">
+            
+              <span class="text-xs text-gray-500"><PublicKeyDisplay pubkey={followList.pubkey} />  · {getRelativeTime(followList.createdAt)}</span>
+                
+            </div>
         </div>
         
-        <div class="flex space-x-2">
+        <!-- button elements -->
+        <div class="flex flex-wrap w-full sm:w-auto justify-end gap-2">
           {#if isAuthor()}
             <button on:click={handleEdit} class="btn btn-primary">Edit List</button>
           {/if}
@@ -211,7 +205,7 @@
               {followingAll ? 'Following...' : 'Follow All'}
             </button>
           {/if}
-          <a href="/" class="btn btn-secondary">Back to Home</a>
+          <a href="/" class="btn btn-secondary">Back Home</a>
         </div>
       </div>
     </div>
@@ -253,55 +247,36 @@
       <div class="bg-white rounded-lg shadow-sm overflow-hidden people-container">
         <ul class="divide-y divide-gray-200">
           {#each followList.entries as entry}
-            <li class="p-4 sm:p-6 flex items-center justify-between">
-              <div class="flex items-center">
+            <li class="p-4 sm:p-6 flex items-start justify-between">
+              <div class="flex items-start">
+                <button on:click={() => openProfilePage(entry.pubkey)}>
                 <img 
                   src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                   alt={entry.name || 'User'} 
                   class="w-10 h-10 rounded-full mr-4"
+                  style="margin-top: 0.5rem !important;"
                 />
-                
+                </button>
                 <div>
-                  <h3 class="text-lg font-medium text-gray-900">{entry.name || 'Unknown User'}
+                  <h3 class="text-lg font-medium text-gray-900">
+                    <button on:click={() => openProfilePage(entry.pubkey)}>
+                    {entry.name || 'Unknown User'}
+                    </button>
                     {#if entry.nip05}
                       <span class="text-xs text-gray-500 hover:text-gray-700 transition">
                         {entry.nip05}
                       </span>
                     {/if}
+                    <span class="text-xs text-gray-500 ml-1"><PublicKeyDisplay pubkey={entry.pubkey} /></span>
                   </h3>
-                  <button 
-                    on:click={() => copyNpub(entry.pubkey)}
-                    class="text-xs text-gray-500 hover:text-gray-700 transition"
-                  >
-                    {#if copying === entry.pubkey}
-                      <span class="text-green-600">Copied!</span>
-                    {:else}
-                      {entry.pubkey.substring(0, 8)}...{entry.pubkey.substring(entry.pubkey.length - 8)}
-                    {/if}
-                  </button>
+                  
                   {#if entry.bio}
                     <p class="text-sm font-normal text-gray-600 mt-1">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
                   {/if}
                 </div>
               </div>
               
-              {#if $user}
-                {#if isFollowing(entry.pubkey)}
-                  <button 
-                    on:click={() => handleUnfollow(entry)}
-                    class="btn btn-outline"
-                  >
-                    Following
-                  </button>
-                {:else}
-                  <button 
-                    on:click={() => handleFollow(entry)}
-                    class="btn btn-primary"
-                  >
-                    Follow
-                  </button>
-                {/if}
-              {/if}
+              <FollowButton entry={entry} variant="primary" />
             </li>
           {/each}
           

@@ -1,6 +1,7 @@
 import { writable, get } from 'svelte/store';
 import NDK, { NDKEvent, NDKUser, NDKKind } from '@nostr-dev-kit/ndk';
 import { DEFAULT_RELAYS, getNdkWithSigner, ndk, publishEvent } from '$lib/nostr/ndk';
+import { browser } from '$app/environment';
 
 export interface UserProfile {
     pubkey: string;
@@ -94,6 +95,7 @@ export async function checkNip07Extension(): Promise<boolean> {
  * Load the user profile from the extension and set it in the store
  */
 export async function loadUser(): Promise<void> {
+    if (!browser) return;
     try {
         // Check if we have a cached user profile
         const cachedUser = localStorage.getItem(USER_CACHE_KEY);

@@ -14,7 +14,8 @@ export const DEFAULT_RELAYS = [
     'wss://relay.nostr.band',
     'wss://relay.8333.space',
     "wss://nostr-pub.wellorder.net",
-    "wss://nostr.oxtr.dev"
+    "wss://nostr.oxtr.dev",
+    "wss://nos.lol"
 ];
 
 // Create and configure the NDK instance

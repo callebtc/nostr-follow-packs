@@ -3,6 +3,9 @@ import type { FollowList } from '$lib/types/follow-list';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fillTextWithTwemoji } from 'node-canvas-with-twemoji-and-discord-emoji';
+import { getProfileInfoForEntries } from './follow-list.service';
+import { getProfileByPubkey } from '$lib/stores/user';
+import { Image } from 'canvas';
 
 export const MAX_PREVIEW_ENTRIES = 6;
 
@@ -12,8 +15,10 @@ export const MAX_PREVIEW_ENTRIES = 6;
  * @param outputPath The path where the generated image will be saved
  */
 export async function generatePreviewImage(followList: FollowList, outputPath: string): Promise<void> {
+    console.log('[generatePreviewImage] Generating image for', followList.name);
     registerFont('static/fonts/Manrope-Regular.ttf', { family: 'Manrope' });
     registerFont('static/fonts/Manrope-Bold.ttf', { family: 'Manrope', weight: 'bold' });
+
     // Create a canvas for the preview image (1200x630 is recommended for social media)
     const width = 1200;
     const height = 630;
@@ -22,21 +27,32 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
 
     // Load profile images first for background tiling
     const profiles = followList.entries.slice(0, MAX_PREVIEW_ENTRIES);
-    const defaultImage = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
-    const profileImages = [];
 
-    try {
-        // Load images for background tiling
-        for (const profile of profiles) {
+    // create a new array profilesWithPictures
+    const defaultImage = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+    const profileImages: Image[] = [];
+    const profilesWithPictures = [];
+    for (const profile of followList.entries) {
+        console.log('[generatePreviewImage] Loading profile image for', profile.pubkey);
+        const profileWithPicture = await getProfileByPubkey(profile.pubkey);
+        if (profileWithPicture.picture) {
             try {
-                const imageUrl = profile.picture || defaultImage;
+                const imageUrl = profileWithPicture.picture;
                 const profileImg = await loadImage(imageUrl);
                 profileImages.push(profileImg);
+                profilesWithPictures.push(profileWithPicture);
             } catch (error) {
                 console.error(`Error loading profile image for ${profile.pubkey}:`, error);
             }
         }
+        if (profilesWithPictures.length >= MAX_PREVIEW_ENTRIES) {
+            break;
+        }
+    }
 
+
+
+    try {
         // If no images loaded, use default
         if (profileImages.length === 0) {
             const defaultImg = await loadImage(defaultImage);
@@ -46,7 +62,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         // Draw tiled background with low opacity
         const tileSize = 120;
         ctx.save();
-        ctx.globalAlpha = 0.28; // Very light alpha
+        ctx.globalAlpha = 0.35; // Very light alpha
 
         // Calculate number of tiles needed to cover the canvas
         const tilesX = Math.ceil(width / tileSize);
@@ -85,14 +101,14 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         // Using fillTextWithTwemoji instead of fillText for emoji support
-        await fillTextWithTwemoji(ctx, 'NOSTR FOLLOW PACK', width / 2, 80, { maxWidth: width - 100 });
+        await fillTextWithTwemoji(ctx, 'NOSTR FOLLOW PACK', width / 2, 90, { maxWidth: width - 100 });
 
         // Add the list name
         ctx.font = 'bold 80px Manrope, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         // Using fillTextWithTwemoji for emoji support
-        await fillTextWithTwemoji(ctx, followList.name, width / 2, 400, { maxWidth: width - 100 });
+        await fillTextWithTwemoji(ctx, followList.name, width / 2, 450, { maxWidth: width - 100 });
 
         // Add description if available
         if (followList.description && false) {
@@ -129,36 +145,31 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         const profileSize = 180;
         const spacing = -10;
         const startX = (width - (maxProfiles * (profileSize + spacing) - spacing)) / 2;
-        const startY = 130;
+        const startY = 140;
 
         // Load and draw profile images in parallel
-        await Promise.all(profiles.map(async (profile, index) => {
-            try {
-                const imageUrl = profile.picture || defaultImage;
-                const profileImg = await loadImage(imageUrl);
+        await Promise.all(profilesWithPictures.map(async (profile, index) => {
+            const profileImg = profileImages[index];
+            const x = startX + index * (profileSize + spacing);
+            const y = startY;
 
-                const x = startX + index * (profileSize + spacing);
-                const y = startY;
+            // Create circular clipping path
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x + profileSize / 2, y + profileSize / 2, profileSize / 2, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.clip();
 
-                // Create circular clipping path
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(x + profileSize / 2, y + profileSize / 2, profileSize / 2, 0, Math.PI * 2, true);
-                ctx.closePath();
-                ctx.clip();
+            // Draw the profile image
+            ctx.drawImage(profileImg, x, y, profileSize, profileSize);
 
-                // Draw the profile image
-                ctx.drawImage(profileImg, x, y, profileSize, profileSize);
+            // Draw a purple border around the profile picture
+            ctx.strokeStyle = '#7740f7';
+            ctx.lineWidth = 25;
+            ctx.stroke();
 
-                // Draw a purple border around the profile picture
-                ctx.strokeStyle = '#7740f7';
-                ctx.lineWidth = 25;
-                ctx.stroke();
+            ctx.restore();
 
-                ctx.restore();
-            } catch (error) {
-                console.error(`Error loading profile image for ${profile.pubkey}:`, error);
-            }
         }));
 
         // Load Nostr logo
@@ -170,7 +181,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         // Using fillTextWithTwemoji for emoji support
-        await fillTextWithTwemoji(ctx, `${followList.entries.length} people to follow`, width / 2, height - 160);
+        // await fillTextWithTwemoji(ctx, `${followList.entries.length} people to follow`, width / 2, height - 160);
 
         // Draw "on Nostr" with the logo
         ctx.font = 'bold 50px Manrope, sans-serif';

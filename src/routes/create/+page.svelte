@@ -200,6 +200,30 @@
     selectedEntries = selectedEntries.filter((_, i) => i !== index);
   }
   
+  // Move entry up in the list
+  function moveEntryUp(index: number) {
+    if (index <= 0) return; // Can't move up if already at the top
+    
+    const newEntries = [...selectedEntries];
+    const temp = newEntries[index];
+    newEntries[index] = newEntries[index - 1];
+    newEntries[index - 1] = temp;
+    
+    selectedEntries = newEntries;
+  }
+  
+  // Move entry down in the list
+  function moveEntryDown(index: number) {
+    if (index >= selectedEntries.length - 1) return; // Can't move down if already at the bottom
+    
+    const newEntries = [...selectedEntries];
+    const temp = newEntries[index];
+    newEntries[index] = newEntries[index + 1];
+    newEntries[index + 1] = temp;
+    
+    selectedEntries = newEntries;
+  }
+  
   // Handle form submission
   async function handleSubmit() {
     // Reset validation
@@ -468,13 +492,39 @@
                         <PublicKeyDisplay pubkey={entry.pubkey} />
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      on:click={() => removeEntry(i)}
-                      class="text-sm text-red-600 hover:text-red-800"
-                    >
-                      Remove
-                    </button>
+                    <div class="flex items-center space-x-2">
+                      <div class="flex flex-col mr-3">
+                        <button
+                          type="button"
+                          on:click={() => moveEntryUp(i)}
+                          disabled={i === 0}
+                          class="text-gray-500 hover:text-purple-600 disabled:opacity-30 disabled:hover:text-gray-500 focus:outline-none"
+                          title="Move up"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          on:click={() => moveEntryDown(i)}
+                          disabled={i === selectedEntries.length - 1}
+                          class="text-gray-500 hover:text-purple-600 disabled:opacity-30 disabled:hover:text-gray-500 focus:outline-none"
+                          title="Move down"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        on:click={() => removeEntry(i)}
+                        class="text-sm text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </li>
                 {/each}
               </ul>

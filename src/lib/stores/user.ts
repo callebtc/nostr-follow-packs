@@ -1,6 +1,7 @@
 import { writable, get } from 'svelte/store';
 import NDK, { NDKEvent, NDKUser, NDKKind, NDKNip07Signer } from '@nostr-dev-kit/ndk';
 import { DEFAULT_RELAYS, ndk } from '$lib/nostr/ndk';
+import { browser } from '$app/environment';
 
 export interface UserProfile {
     pubkey: string;
@@ -37,6 +38,8 @@ const logDebug = (...args: any[]) => {
  * Get stored follow snapshots from localStorage
  */
 export function getFollowSnapshots(): FollowSnapshot[] {
+    if (!browser) return [];
+
     const snapshots = localStorage.getItem(FOLLOW_SNAPSHOTS_KEY);
     if (!snapshots) return [];
 
@@ -52,6 +55,8 @@ export function getFollowSnapshots(): FollowSnapshot[] {
  * Add a new follow snapshot to localStorage
  */
 function saveFollowSnapshot(event: NDKEvent, pubkeys: string[]) {
+    if (!browser) return;
+
     try {
         // Get existing snapshots
         const snapshots = getFollowSnapshots();
@@ -216,20 +221,27 @@ export async function loadUserProfile() {
 export async function getProfileByPubkey(pubkey: string): Promise<{ name?: string, picture?: string, bio?: string, nip05?: string, nip05Verified?: boolean }> {
     // Check local cache first
     const cacheKey = PROFILE_CACHE_PREFIX + pubkey;
-    const cachedProfile = localStorage.getItem(cacheKey);
+    let cachedProfile = null;
 
-    // If we have a cached profile and it's less than 24 hours old, use it
-    if (cachedProfile) {
-        logDebug('Using cached profile for', pubkey);
-        const { data, timestamp } = JSON.parse(cachedProfile);
-        const hasNameAndPicture = data.name || data.picture;
-        const oneDay = 24 * 60 * 60 * 1000;
-        if (Date.now() - timestamp < oneDay && hasNameAndPicture) {
-            return data;
+    if (browser) {
+        try {
+            cachedProfile = localStorage.getItem(cacheKey);
+            // If we have a cached profile and it's less than 24 hours old, use it
+            if (cachedProfile) {
+                logDebug('Using cached profile for', pubkey);
+                const { data, timestamp } = JSON.parse(cachedProfile);
+                const hasNameAndPicture = data.name || data.picture;
+                const oneDay = 24 * 60 * 60 * 1000;
+                if (Date.now() - timestamp < oneDay && hasNameAndPicture) {
+                    return data;
+                }
+            }
+        } catch (error) {
+            logDebug(`[getProfileByPubkey] Could not get cached profile for ${pubkey}:`, error);
         }
     }
 
-    logDebug('Getting profile for', pubkey);
+    logDebug('[getProfileByPubkey] Getting profile for', pubkey);
 
     // If no valid cache, fetch from relays
     try {
@@ -247,6 +259,8 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
         // strip bio from all line breaks
         profile.bio = profile.bio?.replace(/\n/g, ' ');
 
+        logDebug(`[getProfileByPubkey] Profile for ${pubkey}:`, profile);
+
         // // check if the nip05 is verified
         // if (profile.nip05) {
         //     try {
@@ -257,13 +271,23 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
         // }
 
         // Cache the result
-        localStorage.setItem(cacheKey, JSON.stringify({
-            data: profile,
-            timestamp: Date.now()
-        }));
+        if (browser) {
+            try {
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    data: profile,
+                    timestamp: Date.now()
+                }));
+            } catch (error) {
+                console.error(`Error caching profile for ${pubkey}:`, error);
+            }
 
-        // clean up profiles from localStorage
-        cleanUpProfilesFromLocalStorage();
+            // clean up profiles from localStorage
+            try {
+                cleanUpProfilesFromLocalStorage();
+            } catch (error) {
+                console.error(`Error cleaning up profiles from localStorage:`, error);
+            }
+        }
 
         return profile;
     } catch (error) {
@@ -273,6 +297,8 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
 }
 
 async function cleanUpProfilesFromLocalStorage() {
+    if (!browser) return;
+
     const now = Date.now();
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith(PROFILE_CACHE_PREFIX));
@@ -283,7 +309,6 @@ async function cleanUpProfilesFromLocalStorage() {
         }
     }
 }
-
 
 /**
  * Check if a NIP-05 domain is verified

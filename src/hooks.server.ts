@@ -6,6 +6,7 @@ import { dirname } from 'node:path';
 import { generatePreviewImage } from '$lib/services/preview-image.service';
 import { getFollowListById, getProfileInfoForEntries } from '$lib/services/follow-list.service';
 import { ndk } from '$lib/nostr/ndk';
+import type { FollowList } from '$lib/types/follow-list';
 
 // Get the directory name for the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -33,41 +34,65 @@ export const handle: Handle = async ({ event, resolve }) => {
 
         if (isCrawler) {
             try {
-                // Fetch the follow list data
-                console.log('Connecting to relays');
-                await ndk.connect();
-                const followList = await getFollowListById(listId);
-                console.log('Follow list:', followList);
-                if (followList) {
+                // Generate a cached image filename
+                const cacheFilename = `${listId}.png`;
+                const cacheFollowListMetadataFilename = `${listId}.json`;
+                const cachePath = path.join(CACHE_DIR, cacheFilename);
+                const cacheFollowListMetadataPath = path.join(CACHE_DIR, cacheFollowListMetadataFilename);
+                const relativeImagePath = `/preview-images/${cacheFilename}`;
+
+
+                // Check if we have a cached metadata file that's less than 24 hours old
+                let metadataExists = false;
+                if (fs.existsSync(cacheFollowListMetadataPath)) {
+                    const stats = fs.statSync(cacheFollowListMetadataPath);
+                    const fileAge = Date.now() - stats.mtimeMs;
+                    metadataExists = fileAge < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+                    console.log('Metadata exists:', metadataExists);
+                }
+                let followList: FollowList | null = null;
+                if (!metadataExists) {
+                    // Fetch the follow list data
+                    console.log('Connecting to relays');
+                    await ndk.connect();
+                    followList = await getFollowListById(listId);
+                    if (followList) {
+                        fs.writeFileSync(cacheFollowListMetadataPath, JSON.stringify(followList));
+                    }
+                } else {
+                    followList = JSON.parse(fs.readFileSync(cacheFollowListMetadataPath, 'utf8'));
+                }
+
+                if (!followList) {
+                    return new Response('Follow list not found', { status: 404 });
+                }
+
+                // Check if we have a cached image that's less than 24 hours old
+                let imageExists = false;
+                if (fs.existsSync(cachePath)) {
+                    const stats = fs.statSync(cachePath);
+                    const fileAge = Date.now() - stats.mtimeMs;
+                    imageExists = fileAge < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+                    console.log('Image exists:', imageExists);
+                }
+                if (!imageExists) {
+                    // Generate the image if it doesn't exist or is too old
+                    // Fetch the follow list data
+                    console.log('Connecting to relays');
+                    await ndk.connect();
+                    console.log('Follow list:', followList);
+                    console.log('Generating image');
                     // Load profile information for the first few entries
                     const MAX_PREVIEW_ENTRIES = 5;
                     const listWithProfiles = await getProfileInfoForEntries(followList, MAX_PREVIEW_ENTRIES);
+                    await generatePreviewImage(listWithProfiles, cachePath);
+                }
+                // Modify the response to include meta tags for social media
+                const response = await resolve(event);
+                const html = await response.text();
 
-                    // Generate a cached image filename
-                    const cacheFilename = `${listId}.png`;
-                    const cachePath = path.join(CACHE_DIR, cacheFilename);
-                    const relativeImagePath = `/preview-images/${cacheFilename}`;
-
-                    // Check if we have a cached image that's less than 24 hours old
-                    let imageExists = false;
-                    if (fs.existsSync(cachePath)) {
-                        const stats = fs.statSync(cachePath);
-                        const fileAge = Date.now() - stats.mtimeMs;
-                        imageExists = fileAge < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-                    }
-
-                    // Generate the image if it doesn't exist or is too old
-                    if (!imageExists) {
-                        console.log('Generating image');
-                        await generatePreviewImage(listWithProfiles, cachePath);
-                    }
-
-                    // Modify the response to include meta tags for social media
-                    const response = await resolve(event);
-                    const html = await response.text();
-
-                    // Create meta tags for social media sharing
-                    const metaTags = `
+                // Create meta tags for social media sharing
+                const metaTags = `
             <meta property="og:title" content="${followList.name}" />
             <meta property="og:description" content="${followList.description || `A follow list with ${followList.entries.length} people to follow`}" />
             <meta property="og:image" content="${url.origin}${relativeImagePath}" />
@@ -79,14 +104,13 @@ export const handle: Handle = async ({ event, resolve }) => {
             <meta name="twitter:image" content="${url.origin}${relativeImagePath}" />
           `;
 
-                    // Insert meta tags into the HTML head
-                    const updatedHtml = html.replace('</head>', `${metaTags}</head>`);
+                // Insert meta tags into the HTML head
+                const updatedHtml = html.replace('</head>', `${metaTags}</head>`);
 
-                    return new Response(updatedHtml, {
-                        status: response.status,
-                        headers: response.headers
-                    });
-                }
+                return new Response(updatedHtml, {
+                    status: response.status,
+                    headers: response.headers
+                });
             } catch (error) {
                 console.error('Error generating social media preview:', error);
             }

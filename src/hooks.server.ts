@@ -54,7 +54,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                 if (!metadataExists) {
                     // Fetch the follow list data
                     console.log('[!metadataExists] Connecting to relays');
-                    // await ndk.connect();
+                    await ndk.connect();
                     followList = await getFollowListById(listId);
                     if (followList) {
                         fs.writeFileSync(cacheFollowListMetadataPath, JSON.stringify(followList));

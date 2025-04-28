@@ -4,6 +4,7 @@
   import { getRelativeTime } from '$lib/utils/date';
   import type { FollowListEntry } from '$lib/types/follow-list';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
+  import FollowButton from '$lib/components/FollowButton.svelte';
 
   export let pubkeys: string[] = [];
   export let entries: FollowListEntry[] = [];
@@ -146,7 +147,7 @@
               class="w-10 h-10 rounded-full mr-4"
             />
             
-            <div>
+            <div class="flex-grow">
               <h3 class="text-lg font-medium text-gray-900">
                 {post.profile.name || 'Unknown User'}
                 {#if post.profile.nip05}
@@ -158,6 +159,11 @@
               <span class="text-xs text-gray-500">
                 <PublicKeyDisplay pubkey={post.pubkey} /> · {getRelativeTime(post.created_at)}
               </span>
+            </div>
+            
+            <!-- Follow button -->
+            <div>
+              <FollowButton entry={post.profile} />
             </div>
           </div>
           

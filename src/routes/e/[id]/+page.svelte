@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { user, followUsers, unfollowUsers, loadUser } from '$lib/stores/user';
+  import { user, followUsers, loadUser } from '$lib/stores/user';
   import { getFollowListById, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
-  import { hexToNpub } from '$lib/services/vertex-search';
   import { goto } from '$app/navigation';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
   import PostTimeline from '$lib/components/PostTimeline.svelte';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
+  import FollowButton from '$lib/components/FollowButton.svelte';
   
   let followList: FollowList | null = null;
   let loading = true;
@@ -92,43 +92,6 @@
     goto(`/create?edit=${followList.eventId}`);
   }
 
-  // Check if the current user is following a specific pubkey
-  function isFollowing(pubkey: string): boolean {
-    if (!$user) return false;
-    if (!$user.following || typeof $user.following.has !== 'function') return false;
-    return $user.following.has(pubkey);
-  }
-
-  // Handle following a user
-  async function handleFollow(entry: FollowListEntry) {
-    if (!$user) return;
-    
-    try {
-      const result = await followUsers([entry.pubkey]);
-      // if (result) {
-      //   success = `You are now following ${entry.name || 'this user'}`;
-      //   setTimeout(() => { success = ''; }, 5000);
-      // }
-    } catch (err) {
-      console.error('Error following user:', err);
-    }
-  }
-
-  // Handle unfollowing a user
-  async function handleUnfollow(entry: FollowListEntry) {
-    if (!$user) return;
-    
-    try {
-      const result = await unfollowUsers([entry.pubkey]);
-      // if (result) {
-      //   success = `You are no longer following ${entry.name || 'this user'}`;
-      //   setTimeout(() => { success = ''; }, 5000);
-      // }
-    } catch (err) {
-      console.error('Error unfollowing user:', err);
-    }
-  }
-
   // Handle follow all button click
   async function handleFollowAll() {
     if (!$user || !followList || followingAll) return;
@@ -139,7 +102,7 @@
     try {
       for (const entry of followList.entries) {
         // Skip already followed users
-        if (isFollowing(entry.pubkey)) continue;
+        if ($user.following && $user.following.has(entry.pubkey)) continue;
 
         pubkeysToFollow.push(entry.pubkey);
       }
@@ -298,23 +261,7 @@
                 </div>
               </div>
               
-              {#if $user}
-                {#if isFollowing(entry.pubkey)}
-                  <button 
-                    on:click={() => handleUnfollow(entry)}
-                    class="btn btn-outline"
-                  >
-                    Following
-                  </button>
-                {:else}
-                  <button 
-                    on:click={() => handleFollow(entry)}
-                    class="btn btn-primary"
-                  >
-                    Follow
-                  </button>
-                {/if}
-              {/if}
+              <FollowButton entry={entry} variant="primary" />
             </li>
           {/each}
           

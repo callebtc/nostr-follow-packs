@@ -42,7 +42,7 @@
 </script>
 
 <svelte:head>
-  <title>Sheepstr</title>
+  <title>Following._</title>
   <meta name="description" content="Create, share, and discover Nostr follow lists" />
 </svelte:head>
 
@@ -51,7 +51,7 @@
     <div class="container py-4 flex justify-between items-center">
       <div class="flex items-center">
         <a href="/"><img src="/sheep.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;"></a> 
-        <a href="/" class="text-2xl font-bold text-purple-600 hidden sm:inline">Following</a>
+        <a href="/" class="text-2xl font-bold text-grey-600 hidden sm:inline">Following._</a>
       </div>
       <div>
         {#if $user}
@@ -97,7 +97,7 @@
 
   <footer class="bg-white border-t">
     <div class="container py-6 text-center text-gray-500">
-      <p>Sheepstr – Discover and share your favorite Nostr users</p>
+      <p><strong>Following._</strong> is open source and made by <a href="https://github.com/callebtc/nostr-follow-list" class="text-purple-600 hover:text-purple-700">calle</a> with love.</p>
     </div>
   </footer>
 </div> 

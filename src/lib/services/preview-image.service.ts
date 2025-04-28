@@ -2,6 +2,7 @@ import { createCanvas, loadImage, registerFont } from 'canvas';
 import type { FollowList } from '$lib/types/follow-list';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fillTextWithTwemoji } from 'node-canvas-with-twemoji-and-discord-emoji';
 
 export const MAX_PREVIEW_ENTRIES = 6;
 
@@ -83,13 +84,15 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         ctx.font = 'bold 40px Manrope, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText('NOSTR FOLLOW PACK', width / 2, 80, width - 100);
+        // Using fillTextWithTwemoji instead of fillText for emoji support
+        await fillTextWithTwemoji(ctx, 'NOSTR FOLLOW PACK', width / 2, 80, { maxWidth: width - 100 });
 
         // Add the list name
         ctx.font = 'bold 80px Manrope, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(followList.name, width / 2, 400, width - 100);
+        // Using fillTextWithTwemoji for emoji support
+        await fillTextWithTwemoji(ctx, followList.name, width / 2, 400, { maxWidth: width - 100 });
 
         // Add description if available
         if (followList.description && false) {
@@ -108,7 +111,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
                 const metrics = ctx.measureText(testLine);
 
                 if (metrics.width > maxWidth && i > 0) {
-                    ctx.fillText(line, width / 2, y, maxWidth);
+                    await fillTextWithTwemoji(ctx, line, width / 2, y, { maxWidth });
                     line = words[i] + ' ';
                     y += lineHeight;
 
@@ -118,7 +121,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
                     line = testLine;
                 }
             }
-            ctx.fillText(line, width / 2, y, maxWidth);
+            await fillTextWithTwemoji(ctx, line, width / 2, y, { maxWidth });
         }
 
         // Draw profile pictures in a grid
@@ -166,7 +169,8 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         ctx.font = 'bold 40px Manrope, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(`${followList.entries.length} people to follow`, width / 2, height - 160);
+        // Using fillTextWithTwemoji for emoji support
+        await fillTextWithTwemoji(ctx, `${followList.entries.length} people to follow`, width / 2, height - 160);
 
         // Draw "on Nostr" with the logo
         ctx.font = 'bold 50px Manrope, sans-serif';
@@ -175,7 +179,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         const totalWidth = textMetrics.width + logoSize + 10; // Text width + logo + spacing
 
         // Draw "on" text
-        ctx.fillText("on", width / 2 - totalWidth / 2 + 58, height - 80);
+        await fillTextWithTwemoji(ctx, "on", width / 2 - totalWidth / 2 + 58, height - 80);
 
         // Draw the Nostr logo
         const logoX = width / 2 - totalWidth / 2 + 65; // Position after "on" text
@@ -183,7 +187,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         ctx.drawImage(nostrLogo, logoX, logoY, logoSize, logoSize);
 
         // Draw "Nostr" text
-        ctx.fillText("Nostr", width / 2 + 65, height - 80);
+        await fillTextWithTwemoji(ctx, "Nostr", width / 2 + 65, height - 80);
 
         // Save the canvas to a PNG file
         const buffer = canvas.toBuffer('image/png');

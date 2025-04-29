@@ -278,16 +278,34 @@
     error = '';
     
     try {
-      // Parse the URL to get domain and local-part
-      const url = new URL(nip05Url);
-      const domain = url.hostname;
-      const localPart = url.pathname.split('@')[1] || '_';
+      // Clean up the domain input (remove http/https and any paths)
+      let domain = nip05Url.trim().toLowerCase();
+      domain = domain.replace(/^https?:\/\//, ''); // Remove http(s)://
+      domain = domain.split('/')[0]; // Remove any paths
       
-      // Make request to .well-known/nostr.json
-      const response = await fetch(`https://${domain}/.well-known/nostr.json?name=${localPart}`);
+      // Make request to .well-known/nostr.json with CORS handling
+      const response = await fetch(`https://${domain}/.well-known/nostr.json`, {
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+          'Origin': window.location.origin
+        }
+      }).catch((err) => {
+        // Check if the error is a CORS error
+        if (err.message.includes('Failed to fetch') || err.message.includes('CORS')) {
+          throw new Error(`CORS Error: The domain ${domain} is blocking requests from this website. Send the domain owner https://github.com/nostr-protocol/nips/blob/master/05.md#allowing-access-from-javascript-apps.`);
+        }
+        throw err;
+      });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          throw new Error('NIP-05 file not found. Make sure the domain supports NIP-05.');
+        } else if (response.status === 403) {
+          throw new Error('Access denied. The server is blocking requests to the NIP-05 file.');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
       
       const data = await response.json();
@@ -296,8 +314,12 @@
         throw new Error('Invalid nostr.json format: missing names field');
       }
       
-      // Get all pubkeys from the names object
-      const pubkeys = Object.values(data.names);
+      // Get all pubkeys from the names object and ensure they are strings
+      const pubkeys = Object.values(data.names).filter((key): key is string => typeof key === 'string');
+      
+      if (pubkeys.length === 0) {
+        throw new Error('No valid pubkeys found in the NIP-05 list');
+      }
       
       // Add each pubkey to the list
       for (const pubkey of pubkeys) {
@@ -322,8 +344,8 @@
       nip05UrlValid = true;
       
     } catch (err: any) {
-      console.error('Error processing NIP-05 URL:', err);
-      error = `Error processing NIP-05 URL: ${err.message || 'An unknown error occurred'}`;
+      console.error('Error processing NIP-05 domain:', err);
+      error = err.message || 'An unknown error occurred';
       nip05UrlValid = false;
     } finally {
       searching = false;
@@ -504,15 +526,15 @@
           <!-- NIP-05 URL field -->
           <div class="mb-4">
             <label for="nip05Url" class="block text-sm font-medium text-gray-700 mb-1">
-              Add Users from NIP-05 URL
+              Add Users from NIP-05 Domain
             </label>
             <div class="flex">
               <input
-                type="url"
+                type="text"
                 id="nip05Url"
                 bind:value={nip05Url}
                 class="flex-1 px-3 py-2 border {!nip05UrlValid ? 'border-red-500' : 'border-gray-300'} rounded-l-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                placeholder="https://example.com/.well-known/nostr.json"
+                placeholder="bitcoinveterans.org"
                 on:keydown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -530,7 +552,7 @@
               </button>
             </div>
             <p class="mt-1 text-xs text-gray-500">
-              Enter a NIP-05 URL to add all users from that domain
+              Enter a domain to add all users from its NIP-05 list
             </p>
           </div>
           

@@ -131,7 +131,9 @@ export async function getFollowListById(id: string): Promise<FollowList | null> 
 
     try {
         // Fetch the specific event by ID
-        const filter = { ids: [id] };
+        // const filter = { ids: [id] };
+        // fetch by filtering for d tag
+        const filter = { "#d": [id] };
         logDebug('Fetching with filter:', filter);
         logDebug('Current relays:', ndk.explicitRelayUrls);
 
@@ -191,9 +193,9 @@ export async function publishFollowList(
         const currentUser = get(user);
         if (!currentUser) throw new Error('No logged in user');
 
-        // if id is not set, generate a new one
         if (!id) {
-            id = crypto.randomUUID();
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            id = Array(12).fill(0).map(() => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
         }
 
         // Create the follow list event
@@ -220,7 +222,7 @@ export async function publishFollowList(
         event.ndk = ndk;
         await event.publish();
 
-        return event.id;
+        return id;
     } catch (error) {
         console.error('Error publishing follow list:', error);
         logDebug('Error publishing follow list:', error);

@@ -89,7 +89,7 @@
   // Handle edit button click
   function handleEdit() {
     if (!followList) return;
-    goto(`/create?edit=${followList.eventId}`);
+    goto(`/create?edit=${followList.id}`);
   }
 
   // Handle follow all button click

@@ -252,7 +252,7 @@
       if (id) {
         // Navigate to the new follow list
         logDebug('Redirecting to follow list page');
-        goto(`/e/${id}`);
+        goto(`/d/${id}`);
       } else {
         error = 'Failed to publish follow list. Please try again.';
         logDebug('Publish failed - no ID returned');

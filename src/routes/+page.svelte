@@ -128,8 +128,6 @@
   
   <!-- Browse section -->
   <div class="mt-16">
-    <h2 class="text-2xl font-bold text-gray-900 mb-6">Browse Follow Packs</h2>
-    
     {#if loading}
       <div class="flex justify-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>

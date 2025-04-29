@@ -189,8 +189,33 @@
     {/if}
     
     {#if loading}
-      <div class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {#each Array(6) as _, i}
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+            <!-- Skeleton cover image -->
+            <div class="h-36 bg-gray-200"></div>
+            
+            <!-- Skeleton content -->
+            <div class="p-4">
+              <div class="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+              
+              <!-- Skeleton author info -->
+              <div class="flex items-center mb-3">
+                <div class="w-5 h-5 rounded-full bg-gray-200 mr-2"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+              </div>
+              
+              <!-- Skeleton user avatars -->
+              <div class="flex -space-x-2 overflow-hidden mt-4">
+                {#each Array(5) as _, j}
+                  <div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white"></div>
+                {/each}
+              </div>
+              
+              <div class="h-4 bg-gray-200 rounded w-1/2 mt-2"></div>
+            </div>
+          </div>
+        {/each}
       </div>
     {:else if followLists.length === 0}
       <div class="bg-white p-8 rounded-lg shadow-sm text-center">

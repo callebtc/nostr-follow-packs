@@ -144,8 +144,73 @@
 <div class="container py-10 people-container">
   <!-- Loading state -->
   {#if loading}
-    <div class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+    <div class="mb-8 relative animate-pulse">
+      <div class="h-60 rounded-lg overflow-hidden bg-gray-200">
+        <div class="flex justify-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mt-12"></div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex flex-col-reverse sm:flex-row justify-between items-start gap-4 sm:gap-0">
+        <!-- text elements -->
+        <div>
+          <div class="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
+          
+          <div class="flex mt-2">
+            <div class="w-6 h-6 rounded-full bg-gray-200 mr-2"></div>
+            <div class="h-5 bg-gray-200 rounded w-14"></div>
+          </div>
+          
+          <div class="flex ml-1 mt-2">
+            <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+          </div>
+        </div>
+        
+        <!-- button elements -->
+        <div class="flex flex-wrap w-full sm:w-auto justify-end gap-2">
+          <div class="h-10 bg-gray-200 rounded w-24"></div>
+          <div class="h-10 bg-gray-200 rounded w-24"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Description skeleton -->
+    <div class="mb-6 bg-white rounded-lg shadow-sm p-4 sm:p-6">
+      <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+      <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+    </div>
+    
+    <!-- Tab selector skeleton -->
+    <div class="mb-6 bg-white rounded-lg shadow-sm overflow-hidden people-container">
+      <div class="grid grid-cols-2 border-b border-gray-200">
+        <div class="py-4 px-6 flex justify-center">
+          <div class="h-6 bg-gray-200 rounded w-16"></div>
+        </div>
+        <div class="py-4 px-6 flex justify-center">
+          <div class="h-6 bg-gray-200 rounded w-16"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- User list skeleton -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden people-container">
+      <ul class="divide-y divide-gray-200">
+        {#each Array(5) as _, i}
+          <li class="p-4 sm:p-6 flex items-start justify-between">
+            <div class="flex items-start">
+              <div class="min-w-[60px]">
+                <div class="w-10 h-10 rounded-full bg-gray-200 mr-4"></div>
+              </div>
+              <div>
+                <div class="h-5 bg-gray-200 rounded w-40 mb-2"></div>
+                <div class="h-4 bg-gray-200 rounded w-64"></div>
+              </div>
+            </div>
+            
+            <div class="h-8 bg-gray-200 rounded w-20"></div>
+          </li>
+        {/each}
+      </ul>
     </div>
   
   <!-- Error state -->

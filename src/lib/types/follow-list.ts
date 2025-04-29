@@ -45,12 +45,19 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
         const coverImageUrl = imageTag && imageTag[1] ? imageTag[1] : '';
 
         // Parse the content (JSON with description)
-        let description;
-        try {
-            const content = JSON.parse(event.content);
-            description = content.description;
-        } catch (e) {
-            description = '';
+        let description = '';
+        // if "description" tag exists, use it
+        const descriptionTag = event.tags.find(tag => tag[0] === 'description');
+        if (descriptionTag && descriptionTag[1]) {
+            description = descriptionTag[1];
+        } else {
+            // back compat for old follow lists
+            try {
+                const content = JSON.parse(event.content);
+                description = content.description;
+            } catch (e) {
+                description = '';
+            }
         }
 
         // Parse the content (JSON with keys array)
@@ -102,10 +109,10 @@ export async function createFollowListEvent(followList: Omit<FollowList, 'eventI
         event.tags.push(['p', entry.pubkey]);
     });
 
-    // Set the content with the description
-    event.content = JSON.stringify({
-        description: followList.description || ''
-    });
+    // set the description as a "description" tag
+    if (followList.description) {
+        event.tags.push(['description', followList.description]);
+    }
 
     // Add the created at tag to current timestamp
     event.created_at = Math.floor(Date.now() / 1000);

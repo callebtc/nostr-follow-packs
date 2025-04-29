@@ -63,7 +63,7 @@ You can preview the production build with `npm run preview`.
 
 - Users can log in with a NIP-07 compatible browser extension
 - Create follow lists by searching for users and adding them to a list
-- Publish follow lists as replaceable events (kind 29089)
+- Publish follow lists as replaceable events (kind 39089)
 - Browse and discover follow lists created by others
 - View follow lists and follow users directly from them
 

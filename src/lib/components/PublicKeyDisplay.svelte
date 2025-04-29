@@ -33,6 +33,7 @@
 </script>
 
 <button 
+  type="button"
   on:click={copyToClipboard}
   class="text-xs text-gray-500 hover:text-gray-700 transition"
 >

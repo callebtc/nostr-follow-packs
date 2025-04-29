@@ -137,6 +137,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Following._ {followList?.name || 'Loading...'}</title>
+</svelte:head>
+
 <div class="container py-10 people-container">
   <!-- Loading state -->
   {#if loading}

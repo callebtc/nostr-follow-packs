@@ -29,8 +29,8 @@ export const handle: Handle = async ({ event, resolve }) => {
         const listId = followListMatch[1];
         const userAgent = event.request.headers.get('user-agent') || '';
 
-        // Check if this is a bot or social media crawler
-        const isCrawler = /bot|facebook|twitter|slack|discord|telegram|linkedin|whatsapp/i.test(userAgent);
+        // Check if this is a bot or social media crawler, including Signal
+        const isCrawler = /bot|facebook|twitter|slack|discord|telegram|linkedin|whatsapp|signal/i.test(userAgent);
 
         if (isCrawler) {
             try {
@@ -91,17 +91,20 @@ export const handle: Handle = async ({ event, resolve }) => {
                 const response = await resolve(event);
                 const html = await response.text();
 
-                // Create meta tags for social media sharing
+                // Create meta tags for social media sharing - formatted for compatibility with Signal and other platforms
                 const metaTags = `
             <meta property="og:title" content="${followList.name}" />
-            <meta property="og:description" content="${followList.description || `A follow list with ${followList.entries.length} people to follow`}" />
-            <meta property="og:image" content="${url.origin}${relativeImagePath}" />
-            <meta property="og:url" content="${url.href}" />
+            <meta property="og:description" content="${followList.description || `A follow pack with ${followList.entries.length} people to follow`}" />
+            <meta property="og:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
+            <meta property="og:url" content="${url.href.replace('http:', 'https:')}" />
             <meta property="og:type" content="website" />
+            <meta property="og:site_name" content="Nostr Follow List" />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
             <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:title" content="${followList.name}" />
-            <meta name="twitter:description" content="${followList.description || `A follow list with ${followList.entries.length} people to follow`}" />
-            <meta name="twitter:image" content="${url.origin}${relativeImagePath}" />
+            <meta name="twitter:description" content="${followList.description || `A follow pack with ${followList.entries.length} people to follow`}" />
+            <meta name="twitter:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
           `;
 
                 // Insert meta tags into the HTML head

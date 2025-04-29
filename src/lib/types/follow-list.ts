@@ -32,9 +32,11 @@ export interface FollowList {
  */
 export function parseFollowListEvent(event: NDKEvent): FollowList | null {
     try {
-        // Get the name from the n tag
+        // Get the name from the title tag
+        const titleTag = event.tags.find(tag => tag[0] === 'title');
+        // backwards compat: n tag instead of title tag
         const nTag = event.tags.find(tag => tag[0] === 'n');
-        const name = nTag && nTag[1] ? nTag[1] : 'Untitled Follow Pack';
+        const name = titleTag && titleTag[1] ? titleTag[1] : (nTag && nTag[1] ? nTag[1] : 'Untitled Follow Pack');
 
         // Get the id from the d tag
         const dTag = event.tags.find(tag => tag[0] === 'd');
@@ -97,7 +99,7 @@ export async function createFollowListEvent(followList: Omit<FollowList, 'eventI
     event.kind = FOLLOW_LIST_KIND;
 
     // Add the tags
-    event.tags.push(['n', followList.name]);
+    event.tags.push(['title', followList.name]);
     event.tags.push(['d', followList.id]);
 
     if (followList.coverImageUrl) {

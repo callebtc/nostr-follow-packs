@@ -323,7 +323,15 @@
         </div>
       {/if}
       
-      <form on:submit|preventDefault={handleSubmit} class="bg-white shadow-sm rounded-lg overflow-hidden">
+      <form 
+        on:submit|preventDefault={handleSubmit} 
+        on:keydown={(e) => {
+          if (e.key === 'Enter' && e.target instanceof HTMLElement && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }}
+        class="bg-white shadow-sm rounded-lg overflow-hidden"
+      >
         <div class="p-6 border-b">
           <h2 class="text-xl font-medium mb-6">Follow Pack Details</h2>
           

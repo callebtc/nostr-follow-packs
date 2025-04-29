@@ -63,7 +63,7 @@
               <img 
                 src={$user.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                 alt={$user.name || 'User'} 
-                class="w-8 h-8 rounded-full"
+                class="w-8 h-8 rounded-full object-cover"
               />
               <span class="font-medium">{$user.name || 'Anonymous'}</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">

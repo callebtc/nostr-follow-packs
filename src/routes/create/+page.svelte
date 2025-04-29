@@ -449,7 +449,7 @@
                       <img 
                         src={result.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                         alt={result.name || 'User'} 
-                        class="w-8 h-8 rounded-full mr-3"
+                        class="w-8 h-8 rounded-full object-cover mr-3"
                       />
                       <div>
                         <p class="font-medium">{result.name || 'Unknown User'}</p>
@@ -490,7 +490,7 @@
                       <img 
                         src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                         alt={entry.name || 'User'} 
-                        class="w-8 h-8 rounded-full mr-3"
+                        class="w-8 h-8 rounded-full object-cover mr-3"
                       />
                       <div>
                         <p class="font-medium">{entry.name || 'Unknown User'}</p>

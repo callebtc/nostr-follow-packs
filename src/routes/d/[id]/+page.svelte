@@ -180,7 +180,7 @@
               <img 
                 src={followList.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                 alt={followList.authorName || 'Author'} 
-                class="w-6 h-6 rounded-full mr-2"
+                class="w-6 h-6 rounded-full object-cover mr-2"
               />
               </button>
               <button on:click={() => openProfilePage(followList?.pubkey || '')}>
@@ -258,7 +258,7 @@
                   <img 
                       src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                       alt={entry.name || 'User'} 
-                      class="w-10 h-10 rounded-full mr-4"
+                      class="w-10 h-10 rounded-full object-cover mr-4"
                       style="margin-top: 0.5rem !important;"
                     />
                   </button>

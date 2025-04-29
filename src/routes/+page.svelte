@@ -221,7 +221,7 @@
                 <img 
                   src={list.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                   alt={list.authorName || 'Author'} 
-                  class="w-5 h-5 rounded-full mr-2"
+                  class="w-5 h-5 rounded-full object-cover mr-2"
                 />
                 <span class="text-sm text-gray-600">{list.authorName || 'Unknown User'}</span>
               </div>
@@ -232,13 +232,13 @@
                   <img 
                     src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                     alt={entry.name || 'User'} 
-                    class="w-8 h-8 rounded-full border-2 border-white"
+                    class="w-8 h-8 rounded-full object-cover border-2 border-white"
                     style="margin-top: 0px;"
                   />
                 {/each}
                 
                 {#if list.entries.length > 5}
-                  <div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600">
+                  <div class="w-8 h-8 rounded-full object-cover bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600">
                     +{list.entries.length - 5}
                   </div>
                 {/if}

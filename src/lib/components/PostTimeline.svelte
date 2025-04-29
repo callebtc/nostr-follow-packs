@@ -149,7 +149,7 @@
             <img 
               src={post.profile.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
               alt={post.profile.name || 'User'} 
-              class="w-10 h-10 rounded-full mr-4"
+              class="w-10 h-10 rounded-full object-cover mr-4"
               style="margin-top: 0.5rem !important;"
             />
             </button>

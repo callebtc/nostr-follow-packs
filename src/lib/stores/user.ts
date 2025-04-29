@@ -138,7 +138,7 @@ export async function loadUserProfile() {
     if (!pubkey) {
         throw new Error('Failed to get public key from extension');
     }
-
+    logDebug("[loadUserProfile] Public key:", pubkey);
     // Fetch the user metadata and following list
     const ndkUser = ndk.getUser({ pubkey });
     logDebug("[loadUserProfile] Fetching user profile...")

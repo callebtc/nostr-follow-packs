@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { user } from '$lib/stores/user';
+  import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
+
   import { getFollowLists, LIST_LIMIT, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
   import type { FollowList } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
@@ -10,10 +12,19 @@
   let loading = true;
   let loadingMore = false;
   let hasMoreLists = false;
+  let filterUserFollows = false;
 
   async function loadFollowLists(until?: number) {
     try {
-      const lists = await getFollowLists(LIST_LIMIT, undefined, until);
+
+      let lists: FollowList[] = [];
+      if (filterUserFollows) {
+        const follows = get(user)?.following;
+        const followsArray = follows ? Array.from(follows) : [];
+        lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
+      } else {
+        lists = await getFollowLists(LIST_LIMIT, undefined, until);
+      }
       
       // Determine if we might have more lists
       hasMoreLists = lists.length >= LIST_LIMIT;
@@ -101,6 +112,13 @@
   function handleCreateClick() {
     goto('/create');
   }
+
+  async function handleFilterUserFollows() {
+    // Value is already toggled through binding
+    loading = true;
+    followLists = await loadFollowLists();
+    loading = false;
+  }
 </script>
 
 <div class="container py-10">
@@ -125,6 +143,24 @@
       {/if}
     </div>
   </div>
+
+  <!-- Filter section -->
+  {#if $user}
+    <div class="mt-16 flex items-center justify-center">
+      <label class="flex items-center cursor-pointer min-w-[280px] justify-between">
+        <div class="text-lg font-medium text-gray-500">
+          Filter packs by users I follow
+        </div>
+        <div class="relative ml-4">
+          <input type="checkbox" class="sr-only" bind:checked={filterUserFollows} on:change={handleFilterUserFollows} />
+          <div class="block w-14 h-8 rounded-full bg-gray-200"></div>
+          <div class="dot absolute left-1 top-1 {filterUserFollows ? 'bg-purple-600' : 'bg-white'} w-6 h-6 rounded-full transition-transform duration-300 ease-in-out" 
+               class:translate-x-6={filterUserFollows}></div>
+          <div class="absolute inset-0 rounded-full transition-colors duration-300 ease-in-out -z-10"></div>
+        </div>
+      </label>
+    </div>
+  {/if}
   
   <!-- Browse section -->
   <div class="mt-16">

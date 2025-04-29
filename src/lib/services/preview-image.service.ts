@@ -107,8 +107,54 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         ctx.font = 'bold 80px Manrope, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        // Using fillTextWithTwemoji for emoji support
-        await fillTextWithTwemoji(ctx, followList.name, width / 2, 450, { maxWidth: width - 100 });
+
+        // Text wrapping logic for the follow list name
+        const maxNameWidth = width - 100;
+        const nameWords = followList.name.split(' ');
+        let nameLine1 = '';
+        let nameLine2 = '';
+        let nameY = 450; // Default Y position for single line
+        let fontSize = 80; // Default font size
+
+        // Check if text is too wide and needs wrapping
+        ctx.font = `bold ${fontSize}px Manrope, sans-serif`;
+        if (ctx.measureText(followList.name).width > maxNameWidth) {
+            // Try to split into two roughly equal lines
+            let line = '';
+            let halfway = Math.ceil(nameWords.length / 2);
+
+            // Find a good split point near the halfway mark
+            for (let i = 0; i < nameWords.length; i++) {
+                const word = nameWords[i];
+                if (i < halfway) {
+                    nameLine1 += word + ' ';
+                } else {
+                    nameLine2 += word + ' ';
+                }
+            }
+
+            nameLine1 = nameLine1.trim();
+            nameLine2 = nameLine2.trim();
+
+            // If the lines are still too long, reduce the font size
+            const line1Width = ctx.measureText(nameLine1).width;
+            const line2Width = ctx.measureText(nameLine2).width;
+
+            if (Math.max(line1Width, line2Width) > maxNameWidth) {
+                fontSize = 70; // Reduce font size
+                ctx.font = `bold ${fontSize}px Manrope, sans-serif`;
+            }
+
+            // Adjust Y position for two lines (move up a bit)
+            nameY = 400;
+
+            // Draw the two lines
+            await fillTextWithTwemoji(ctx, nameLine1, width / 2, nameY, { maxWidth: maxNameWidth });
+            await fillTextWithTwemoji(ctx, nameLine2, width / 2, nameY + fontSize, { maxWidth: maxNameWidth });
+        } else {
+            // Single line, draw as normal
+            await fillTextWithTwemoji(ctx, followList.name, width / 2, nameY, { maxWidth: maxNameWidth });
+        }
 
         // Add description if available
         if (followList.description && false) {

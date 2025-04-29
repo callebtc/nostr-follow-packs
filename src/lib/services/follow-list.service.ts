@@ -23,7 +23,7 @@ const logDebug = (...args: any[]) => {
 /**
  * Get a list of the most recent follow lists from relays
  */
-export async function getFollowLists(limit: number = LIST_LIMIT, since?: number, until?: number, fromPubkeys?: string[]): Promise<FollowList[]> {
+export async function getFollowLists(limit: number = LIST_LIMIT, since?: number, until?: number, fromPubkeys?: string[], includingPubkeys?: string[]): Promise<FollowList[]> {
     // ensure that user is loaded 
     try {
         await loadUser();
@@ -38,9 +38,16 @@ export async function getFollowLists(limit: number = LIST_LIMIT, since?: number,
         // Fetch follow list events from relays
         const filter = { kinds: [FOLLOW_LIST_KIND], limit, since, until } as NDKFilter;
 
+        // fromPubkeys as authors
         if (fromPubkeys) {
             logDebug(`Adding ${fromPubkeys.length} pubkeys to filter`);
             filter.authors = fromPubkeys;
+        }
+
+        // includingPubkeys as p tags
+        if (includingPubkeys) {
+            logDebug(`Adding ${includingPubkeys.length} pubkeys to filter`);
+            filter['#p'] = includingPubkeys;
         }
 
         logDebug('Fetching with filter:', filter);

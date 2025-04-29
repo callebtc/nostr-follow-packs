@@ -8,27 +8,67 @@
   import type { FollowList } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
 
+  type FilterType = "none" | "follows" | "included";
+  const FILTER_NONE: FilterType = "none";
+  const FILTER_USER_FOLLOWS: FilterType = "follows";
+  const FILTER_USER_INCLUDED: FilterType = "included";
+
   let followLists: FollowList[] = [];
   let loading = true;
   let loadingMore = false;
   let hasMoreLists = false;
-  let filterUserFollows = false;
+  let filterType: FilterType = FILTER_NONE;
+  let dropdownOpen = false;
+
+  // Filter options for the dropdown
+  const filterOptions = [
+    { value: FILTER_NONE, label: 'Show all packs' },
+    { value: FILTER_USER_FOLLOWS, label: 'From users I follow' },
+    { value: FILTER_USER_INCLUDED, label: 'Packs including me' }
+  ];
+
+  // Get the current filter label
+  $: currentFilterLabel = filterOptions.find(option => option.value === filterType)?.label || 'Show all packs';
+
+  // Handle clicks outside to close dropdown
+  function handleClickOutside(event: MouseEvent) {
+    const dropdown = document.getElementById('filter-dropdown');
+    if (dropdown && !dropdown.contains(event.target as Node)) {
+      dropdownOpen = false;
+    }
+  }
+
+  // Set up or remove the click handler based on dropdown state
+  $: if (typeof window !== 'undefined') {
+    if (dropdownOpen) {
+      window.addEventListener('click', handleClickOutside);
+    } else {
+      window.removeEventListener('click', handleClickOutside);
+    }
+  }
+  
+  // Clean up event listener on component unmount
+  onMount(() => {
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('click', handleClickOutside);
+      }
+    };
+  });
 
   async function loadFollowLists(until?: number) {
     try {
-
+      await loadUser();
+      const ourUser = get(user);
       let lists: FollowList[] = [];
-      if (filterUserFollows) {
-        await loadUser();
-        const ourUser = get(user);
-        if (ourUser) {
-          const follows = ourUser.following;
-          const followsArray = follows ? Array.from(follows) : [];
-          followsArray.push(ourUser.pubkey);
-          lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
-        } else {
-          lists = await getFollowLists(LIST_LIMIT, undefined, until);
-        }
+      
+      if (ourUser && filterType === FILTER_USER_FOLLOWS) {
+        const follows = ourUser.following;
+        const followsArray = follows ? Array.from(follows) : [];
+        followsArray.push(ourUser.pubkey);
+        lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
+      } else if (ourUser && filterType === FILTER_USER_INCLUDED) {
+        lists = await getFollowLists(LIST_LIMIT, undefined, until, undefined, [ourUser.pubkey]);
       } else {
         lists = await getFollowLists(LIST_LIMIT, undefined, until);
       }
@@ -101,9 +141,9 @@
     try {
       // Load filter preference from localStorage
       if (typeof localStorage !== 'undefined') {
-        const savedFilter = localStorage.getItem('filterUserFollows');
+        const savedFilter = localStorage.getItem('filterType');
         if (savedFilter !== null) {
-          filterUserFollows = savedFilter === 'true';
+          filterType = savedFilter as FilterType;
         }
       }
       
@@ -145,10 +185,10 @@
     goto('/create');
   }
 
-  async function handleFilterUserFollows() {
+  async function handleFilterChange() {
     // Save filter preference to localStorage
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('filterUserFollows', filterUserFollows.toString());
+      localStorage.setItem('filterType', filterType);
     }
     
     followLists = [];
@@ -176,7 +216,7 @@
       </button>
       
       {#if !$user}
-        <p class="text-sm text-gray-500 mt-4">Please log in to create a follow pack or to filter packs by users you follow.</p>
+        <p class="text-sm text-gray-500 mt-4">Please log in to create a follow pack or to filter packs.</p>
       {/if}
     </div>
   </div>
@@ -186,18 +226,36 @@
     <!-- Filter section (moved to top right) -->
     {#if $user}
       <div class="flex justify-end mb-6">
-        <label class="flex items-center cursor-pointer">
-          <div class="font-medium text-gray-500">
-            Filter packs by users I follow
-          </div>
-          <div class="relative ml-4">
-            <input type="checkbox" class="sr-only" bind:checked={filterUserFollows} on:change={handleFilterUserFollows} />
-            <div class="block w-12 h-6 rounded-full bg-gray-200"></div>
-            <div class="dot absolute left-1 top-0.5 {filterUserFollows ? 'bg-purple-600' : 'bg-white'} w-5 h-5 rounded-full transition-transform duration-300 ease-in-out" 
-                 class:translate-x-5={filterUserFollows}></div>
-            <div class="absolute inset-0 rounded-full transition-colors duration-300 ease-in-out -z-10"></div>
-          </div>
-        </label>
+        <div class="relative" id="filter-dropdown">
+          <button 
+            class="appearance-none bg-white border border-gray-200 rounded-md pl-4 pr-10 py-3 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all min-w-[220px] font-medium text-sm flex items-center justify-between"
+            on:click|stopPropagation={() => dropdownOpen = !dropdownOpen}
+          >
+            <span>{currentFilterLabel}</span>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg class="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+              </svg>
+            </div>
+          </button>
+          
+          {#if dropdownOpen}
+            <div class="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10">
+              {#each filterOptions as option}
+                <button 
+                  class="w-full text-left px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors {filterType === option.value ? 'bg-purple-50 text-purple-700' : ''}"
+                  on:click|stopPropagation={() => {
+                    filterType = option.value;
+                    dropdownOpen = false;
+                    handleFilterChange();
+                  }}
+                >
+                  {option.label}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
     {/if}
     

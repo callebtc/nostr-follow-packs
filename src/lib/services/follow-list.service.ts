@@ -280,3 +280,48 @@ export async function deleteFollowList(eventId: string): Promise<boolean> {
     }
 }
 
+
+
+/** 
+ * Search for follow lists by name or description
+ */
+export async function searchFollowLists(query: string, limit: number = LIST_LIMIT): Promise<FollowList[]> {
+  logDebug('Searching follow lists for:', query);
+  try {
+    // First fetch a larger set of recent follow lists
+    // This approach searches local content rather than asking relays to search
+    const allLists = await getFollowLists(limit * 2);
+    
+    // Convert query to lowercase for case-insensitive search
+    const searchTerm = query.toLowerCase();
+    
+    // Filter lists by name or description containing the search term
+    const matchedLists = allLists.filter(list => {
+      const nameMatch = list.name.toLowerCase().includes(searchTerm);
+      const descMatch = list.description?.toLowerCase().includes(searchTerm) || false;
+      const authorMatch = list.authorName?.toLowerCase().includes(searchTerm) || false;
+      
+      return nameMatch || descMatch || authorMatch;
+    });
+    
+    // Sort by relevance (name matches first, then description matches)
+    matchedLists.sort((a, b) => {
+      // If one name contains the term and the other doesn't, prioritize the match
+      const aNameMatch = a.name.toLowerCase().includes(searchTerm);
+      const bNameMatch = b.name.toLowerCase().includes(searchTerm);
+      
+      if (aNameMatch && !bNameMatch) return -1;
+      if (!aNameMatch && bNameMatch) return 1;
+      
+      // Otherwise, most recent first
+      return b.createdAt - a.createdAt;
+    });
+    
+    // Limit results
+    return matchedLists.slice(0, limit);
+  } catch (error) {
+    console.error('Error searching follow lists:', error);
+    logDebug('Error searching follow lists:', error);
+    return [];
+  }
+}

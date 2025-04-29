@@ -338,7 +338,7 @@
                   </h3>
                   
                   {#if entry.bio}
-                    <p class="text-sm font-normal text-gray-600 mt-1">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
+                    <p class="text-sm font-normal text-gray-600 mt-1 break-words">{entry.bio.length > 100 ? entry.bio.substring(0, 100) + '...' : entry.bio}</p>
                   {/if}
                 </div>
               </div>

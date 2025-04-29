@@ -34,3 +34,16 @@ img {
 .btn-disabled {
     @apply opacity-50 cursor-not-allowed;
 }
+
+.break-words {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Apply word breaking to links too */
+:global(a) {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}

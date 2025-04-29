@@ -176,7 +176,7 @@
           </div>
           
           <!-- Post content -->
-          <div class="text-gray-700 mb-3">
+          <div class="text-gray-700 mb-3 break-words">
             {@html processContent(post.content)}
           </div>
           

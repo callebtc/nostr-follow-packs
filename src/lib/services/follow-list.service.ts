@@ -233,8 +233,8 @@ export async function publishFollowList(
 /**
  * Delete a follow list by its ID
  */
-export async function deleteFollowList(id: string, eventId: string): Promise<boolean> {
-    logDebug('Deleting follow list with ID:', id);
+export async function deleteFollowList(eventId: string): Promise<boolean> {
+    logDebug('Deleting follow list event ID:', eventId);
 
     try {
         // Get the current user

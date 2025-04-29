@@ -29,6 +29,7 @@
   let editMode = false;
   let editId = '';
   let listId = '';
+  let listEventId = '';
   let showDeleteConfirm = false;
   let deleting = false;
   let loading = false;
@@ -60,11 +61,11 @@
   
   // Handle delete confirmation
   async function confirmDelete() {
-    if (!listId) return;
+    if (!listEventId) return;
     
     deleting = true;
     try {
-      const deleted = await deleteFollowList(listId, editId);
+      const deleted = await deleteFollowList(listEventId);
       if (deleted) {
         // Navigate back to home
         goto('/');
@@ -109,6 +110,7 @@
       coverImageUrl = list.coverImageUrl;
       description = list.description || '';
       listId = list.id;
+      listEventId = list.eventId;
       selectedEntries = [...list.entries];
 
       // reactively get profile info for each entry

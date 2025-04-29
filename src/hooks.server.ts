@@ -93,7 +93,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
                 // Create meta tags for social media sharing - formatted for compatibility with Signal and other platforms
                 const metaTags = `
-            <meta property="og:title" content="${followList.name}" />
+            <meta property="og:title" content="Following._ ${followList.name}" />
             <meta property="og:description" content="${followList.description || `A follow pack with ${followList.entries.length} people to follow`}" />
             <meta property="og:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
             <meta property="og:url" content="${url.href.replace('http:', 'https:')}" />
@@ -102,7 +102,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
             <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:title" content="${followList.name}" />
+            <meta name="twitter:title" content="Following._ ${followList.name}" />
             <meta name="twitter:description" content="${followList.description || `A follow pack with ${followList.entries.length} people to follow`}" />
             <meta name="twitter:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
           `;

@@ -1,13 +1,18 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  
   // Search state
   let searchQuery = '';
   let focused = false;
 
-  // Handle search form submission (does nothing for now)
+  // Handle search form submission
   function handleSearch(e: Event) {
     e.preventDefault();
-    // This will be implemented later
-    console.log('Search query:', searchQuery);
+    
+    // Only navigate if we have a query
+    if (searchQuery.trim()) {
+      goto(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
   }
 
   // Toggle focus state for styling
@@ -54,12 +59,3 @@
     />
   </div>
 </form>
-
-<style>
-  /* Mobile search button for small screens */
-  @media (max-width: 768px) {
-    form {
-      display: none;
-    }
-  }
-</style>

@@ -10,6 +10,7 @@
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import { hexToNpub } from '$lib/services/vertex-search';
+  import CopyEvent from '$lib/components/CopyEvent.svelte';
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
@@ -249,10 +250,9 @@
               </button>
               
             </div>
-            <div class="flex ml-1 mt-2">
-            
+            <div class="flex ml-1 mt-2 items-center flex-wrap">
               <span class="text-xs text-gray-500"><PublicKeyDisplay pubkey={followList.pubkey} />  · {getRelativeTime(followList.createdAt)}</span>
-                
+              <CopyEvent eventId={followList.eventId} pubkey={followList.pubkey} />
             </div>
         </div>
         

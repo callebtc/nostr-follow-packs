@@ -99,7 +99,7 @@ export const handle: Handle = async ({ event, resolve }) => {
             <meta property="og:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
             <meta property="og:url" content="${url.href.replace('http:', 'https:')}" />
             <meta property="og:type" content="website" />
-            <meta property="og:site_name" content="Nostr Follow List" />
+            <meta property="og:site_name" content="Nostr Follow Pack" />
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
             <meta name="twitter:card" content="summary_large_image" />

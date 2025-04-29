@@ -43,7 +43,7 @@
 
 <svelte:head>
   <title>Following._</title>
-  <meta name="description" content="Create, share, and discover Nostr follow lists" />
+  <meta name="description" content="Create, share, and discover Nostr Follow Packs" />
 </svelte:head>
 
 <div class="min-h-screen flex flex-col">

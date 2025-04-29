@@ -19,6 +19,7 @@ if (!fs.existsSync(CACHE_DIR)) {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+    console.log('handle event', event.request.url);
     const url = new URL(event.request.url);
     const pathname = url.pathname;
 

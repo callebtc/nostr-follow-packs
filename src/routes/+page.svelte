@@ -20,9 +20,15 @@
       let lists: FollowList[] = [];
       if (filterUserFollows) {
         await loadUser();
-        const follows = get(user)?.following;
-        const followsArray = follows ? Array.from(follows) : [];
-        lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
+        const ourUser = get(user);
+        if (ourUser) {
+          const follows = ourUser.following;
+          const followsArray = follows ? Array.from(follows) : [];
+          followsArray.push(ourUser.pubkey);
+          lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
+        } else {
+          lists = await getFollowLists(LIST_LIMIT, undefined, until);
+        }
       } else {
         lists = await getFollowLists(LIST_LIMIT, undefined, until);
       }

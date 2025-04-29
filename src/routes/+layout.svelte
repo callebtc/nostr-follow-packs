@@ -4,10 +4,11 @@
   import { user, loadUser, checkNip07Extension } from '$lib/stores/user';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-
+  import SearchBox from '$lib/components/SearchBox.svelte'; // Import the new component
+  
   let hasExtension = false;
   let showUserMenu = false;
-
+  
   onMount(async () => {
     hasExtension = await checkNip07Extension();
     if (hasExtension) {
@@ -21,7 +22,7 @@
       }
     });
   });
-
+  
   function handleLogin() {
     if (!hasExtension) {
       alert('Please install a NIP-07 compatible browser extension like Alby or nos2x');
@@ -50,9 +51,17 @@
   <header class="bg-white shadow-sm">
     <div class="container py-4 flex justify-between items-center">
       <div class="flex items-center">
-        <a class="hidden sm:inline"href="/"><img src="/farm.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;"></a> 
+        <a class="hidden sm:inline" href="/">
+          <img src="/farm.png" alt="Sheep" class="mx-auto mr-2" style="max-height: 40px;">
+        </a>
         <a href="/" class="text-2xl font-bold text-grey-600">Following._</a>
       </div>
+      
+      <!-- Add the search box here -->
+      <div class="flex-grow mx-4">
+        <SearchBox />
+      </div>
+      
       <div>
         {#if $user}
           <div class="relative user-menu-container">
@@ -60,9 +69,9 @@
               on:click={toggleUserMenu}
               class="flex items-center space-x-2 focus:outline-none"
             >
-              <img 
-                src={$user.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                alt={$user.name || 'User'} 
+              <img
+                src={$user.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
+                alt={$user.name || 'User'}
                 class="w-8 h-8 rounded-full object-cover"
               />
               <span class="font-medium">{$user.name || 'Anonymous'}</span>
@@ -90,14 +99,14 @@
       </div>
     </div>
   </header>
-
+  
   <main class="flex-1">
     <slot />
   </main>
-
+  
   <footer class="bg-white border-t">
     <div class="container py-6 text-center text-gray-500">
       <p><strong>Following._</strong> is open source and made by <a href="https://github.com/callebtc/nostr-follow-list" class="text-purple-600 hover:text-purple-700">calle</a> with love.</p>
     </div>
   </footer>
-</div> 
+</div>

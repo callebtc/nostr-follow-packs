@@ -67,6 +67,52 @@ You can preview the production build with `npm run preview`.
 - Browse and discover follow lists created by others
 - View follow lists and follow users directly from them
 
+## Nostr Follow List Event Format
+
+Follow lists are published as Nostr events with `kind: 39089`. This is a parameterized replaceable event that allows users to maintain multiple follow lists.
+
+### Event Structure
+
+```json
+{
+  "kind": 39089,            // The event kind for follow lists
+  "pubkey": "...",          // Public key of the list creator
+  "created_at": 1234567890, // Unix timestamp when the list was created/updated
+  "tags": [
+    ["title", "List Title"], // Title of the follow list
+    ["d", "uuid"],           // Unique identifier for the list (for replaceability)
+    ["image", "https://..."], // Optional: URL to an image for the list
+    ["description", "..."],   // Optional: Description of the follow list
+    ["p", "pubkey1"],        // Public key of a user in the follow list
+    ["p", "pubkey2"],        // Each "p" tag represents a user in the list
+    // Additional "p" tags for more users
+  ],
+  "content": "",            // Usually empty
+  "sig": "..."              // Signature of the event
+}
+```
+
+### Field Descriptions
+
+- **kind**: 39089 - Specific kind for follow lists
+- **pubkey**: The public key of the user who created the list
+- **created_at**: Unix timestamp when the list was created or last updated
+- **tags**: Array of tags with special meanings:
+  - `["title", "..."]`: The name/title of the follow list
+  - `["d", "..."]`: A unique identifier for the list (usually a UUID), allows for updating the list later
+  - `["image", "..."]`: Optional URL to an image representing the list
+  - `["description", "..."]`: Optional text description of the follow list
+  - `["p", "..."]`: Each "p" tag contains the public key of a user included in the follow list
+- **content**: Usually empty
+- **sig**: The cryptographic signature proving the event's authenticity
+
+### Implementation Notes
+
+- Follow lists are parameterized replaceable events, identified by the combination of pubkey, kind, and d-tag
+- To update a list, publish a new event with the same kind, pubkey, and d-tag values but a newer created_at timestamp
+- To follow multiple users in a list, add multiple "p" tags to the event
+- Clients should display lists ordered by most recent created_at
+
 ## Contributing
 
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/yourusername/nostr-follow-list/issues).

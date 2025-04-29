@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { user } from '$lib/stores/user';
-  import { searchUsers, npubToHex, isValidNpub } from '$lib/services/vertex-search';
+  import { searchUsers, npubToHex, isValidNpub, hexToNpub } from '$lib/services/vertex-search';
   import { publishFollowList, getFollowListById, deleteFollowList } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
   import type { VertexSearchResult } from '$lib/services/vertex-search';
@@ -21,6 +21,7 @@
   let coverImageUrl = '';
   let description = '';
   let searchQuery = '';
+  let nip05Url = '';
   let searching = false;
   let searchResults: VertexSearchResult[] = [];
   let selectedEntries: FollowListEntry[] = [];
@@ -37,6 +38,7 @@
   // Validation state
   let nameValid = true;
   let entriesValid = true;
+  let nip05UrlValid = false;
   
   onMount(async () => {
     // Check if we're in edit mode
@@ -267,6 +269,66 @@
       submitting = false;
     }
   }
+
+  // Handle NIP-05 URL search
+  async function handleNip05Search() {
+    if (!nip05Url.trim()) return;
+    
+    searching = true;
+    error = '';
+    
+    try {
+      // Parse the URL to get domain and local-part
+      const url = new URL(nip05Url);
+      const domain = url.hostname;
+      const localPart = url.pathname.split('@')[1] || '_';
+      
+      // Make request to .well-known/nostr.json
+      const response = await fetch(`https://${domain}/.well-known/nostr.json?name=${localPart}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.names) {
+        throw new Error('Invalid nostr.json format: missing names field');
+      }
+      
+      // Get all pubkeys from the names object
+      const pubkeys = Object.values(data.names);
+      
+      // Add each pubkey to the list
+      for (const pubkey of pubkeys) {
+        try {
+          // Convert hex pubkey to npub format
+          const npub = await hexToNpub(pubkey);
+          const profile = await getProfileByPubkey(pubkey);
+          addEntry({
+            pubkey,
+            npub, // Add the npub format
+            rank: 0,
+            name: profile.name || 'Unknown',
+            picture: profile.picture || '',
+          });
+        } catch (err) {
+          console.error(`Error processing pubkey ${pubkey}:`, err);
+        }
+      }
+      
+      // Clear the URL field
+      nip05Url = '';
+      nip05UrlValid = true;
+      
+    } catch (err: any) {
+      console.error('Error processing NIP-05 URL:', err);
+      error = `Error processing NIP-05 URL: ${err.message || 'An unknown error occurred'}`;
+      nip05UrlValid = false;
+    } finally {
+      searching = false;
+    }
+  }
 </script>
 
 <div class="container py-10">
@@ -437,6 +499,39 @@
             {#if error}
               <p class="mt-2 text-sm text-red-600">{error}</p>
             {/if}
+          </div>
+
+          <!-- NIP-05 URL field -->
+          <div class="mb-4">
+            <label for="nip05Url" class="block text-sm font-medium text-gray-700 mb-1">
+              Add Users from NIP-05 URL
+            </label>
+            <div class="flex">
+              <input
+                type="url"
+                id="nip05Url"
+                bind:value={nip05Url}
+                class="flex-1 px-3 py-2 border {!nip05UrlValid ? 'border-red-500' : 'border-gray-300'} rounded-l-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                placeholder="https://example.com/.well-known/nostr.json"
+                on:keydown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleNip05Search();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                on:click={handleNip05Search}
+                disabled={searching || !nip05Url.trim()}
+                class="px-4 py-2 bg-purple-600 text-white rounded-r-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+              >
+                {searching ? 'Processing...' : 'Add Users'}
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">
+              Enter a NIP-05 URL to add all users from that domain
+            </p>
           </div>
           
           <!-- Search results -->

@@ -1,5 +1,5 @@
 import { ndk } from '$lib/nostr/ndk';
-import { NDKEvent } from '@nostr-dev-kit/ndk';
+import { NDKEvent, type NDKFilter } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
     parseFollowListEvent,
@@ -40,7 +40,7 @@ export async function getFollowLists(limit: number = LIST_LIMIT, since?: number,
 
         if (fromPubkeys) {
             logDebug(`Adding ${fromPubkeys.length} pubkeys to filter`);
-            filter['#p'] = fromPubkeys;
+            filter.authors = fromPubkeys;
         }
 
         logDebug('Fetching with filter:', filter);

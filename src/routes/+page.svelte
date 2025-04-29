@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { user } from '$lib/stores/user';
+  import { user, loadUser } from '$lib/stores/user';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
 
@@ -19,6 +19,7 @@
 
       let lists: FollowList[] = [];
       if (filterUserFollows) {
+        await loadUser();
         const follows = get(user)?.following;
         const followsArray = follows ? Array.from(follows) : [];
         lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
@@ -56,10 +57,9 @@
     loadingMore = false;
   }
 
-  onMount(async () => {
-    try {
-      // Load follow lists first and render them immediately
-      followLists = await loadFollowLists();
+  async function loadAllFollowLists() {
+    // Load follow lists first and render them immediately
+    followLists = await loadFollowLists();
       loading = false;
       
       // Then load author profiles for each list one by one
@@ -76,6 +76,19 @@
         // Use a separate function to process each entry individually
         loadProfilesForList(i);
       }
+  }
+
+  onMount(async () => {
+    try {
+      // Load filter preference from localStorage
+      if (typeof localStorage !== 'undefined') {
+        const savedFilter = localStorage.getItem('filterUserFollows');
+        if (savedFilter !== null) {
+          filterUserFollows = savedFilter === 'true';
+        }
+      }
+      
+      await loadAllFollowLists();
     } catch (error) {
       console.error('Error fetching follow lists:', error);
       loading = false;
@@ -114,9 +127,14 @@
   }
 
   async function handleFilterUserFollows() {
-    // Value is already toggled through binding
+    // Save filter preference to localStorage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('filterUserFollows', filterUserFollows.toString());
+    }
+    
+    followLists = [];
     loading = true;
-    followLists = await loadFollowLists();
+    await loadAllFollowLists();
     loading = false;
   }
 </script>
@@ -139,31 +157,31 @@
       </button>
       
       {#if !$user}
-        <p class="text-sm text-gray-500 mt-2">Please log in to create a follow list</p>
+        <p class="text-sm text-gray-500 mt-4">Please log in to create a follow pack or to filter packs by users you follow.</p>
       {/if}
     </div>
   </div>
 
-  <!-- Filter section -->
-  {#if $user}
-    <div class="mt-16 flex items-center justify-center">
-      <label class="flex items-center cursor-pointer min-w-[280px] justify-between">
-        <div class="text-lg font-medium text-gray-500">
-          Filter packs by users I follow
-        </div>
-        <div class="relative ml-4">
-          <input type="checkbox" class="sr-only" bind:checked={filterUserFollows} on:change={handleFilterUserFollows} />
-          <div class="block w-14 h-8 rounded-full bg-gray-200"></div>
-          <div class="dot absolute left-1 top-1 {filterUserFollows ? 'bg-purple-600' : 'bg-white'} w-6 h-6 rounded-full transition-transform duration-300 ease-in-out" 
-               class:translate-x-6={filterUserFollows}></div>
-          <div class="absolute inset-0 rounded-full transition-colors duration-300 ease-in-out -z-10"></div>
-        </div>
-      </label>
-    </div>
-  {/if}
-  
   <!-- Browse section -->
   <div class="mt-16">
+    <!-- Filter section (moved to top right) -->
+    {#if $user}
+      <div class="flex justify-end mb-6">
+        <label class="flex items-center cursor-pointer">
+          <div class="font-medium text-gray-500">
+            Filter packs by users I follow
+          </div>
+          <div class="relative ml-4">
+            <input type="checkbox" class="sr-only" bind:checked={filterUserFollows} on:change={handleFilterUserFollows} />
+            <div class="block w-12 h-6 rounded-full bg-gray-200"></div>
+            <div class="dot absolute left-1 top-0.5 {filterUserFollows ? 'bg-purple-600' : 'bg-white'} w-5 h-5 rounded-full transition-transform duration-300 ease-in-out" 
+                 class:translate-x-5={filterUserFollows}></div>
+            <div class="absolute inset-0 rounded-full transition-colors duration-300 ease-in-out -z-10"></div>
+          </div>
+        </label>
+      </div>
+    {/if}
+    
     {#if loading}
       <div class="flex justify-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>

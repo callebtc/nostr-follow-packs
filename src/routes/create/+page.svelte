@@ -33,6 +33,7 @@
   let showDeleteConfirm = false;
   let deleting = false;
   let loading = false;
+  let showRemoveAllConfirm = false;
   
   // Validation state
   let nameValid = true;
@@ -267,6 +268,17 @@
       submitting = false;
     }
   }
+
+  // Handle remove all confirmation
+  function confirmRemoveAll() {
+    selectedEntries = [];
+    showRemoveAllConfirm = false;
+  }
+  
+  // Cancel remove all
+  function cancelRemoveAll() {
+    showRemoveAllConfirm = false;
+  }
 </script>
 
 <div class="container py-10">
@@ -472,11 +484,48 @@
           <!-- Selected entries -->
           <div>
             <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-medium">Selected Users ({selectedEntries.length})</h3>
+              <div class="flex items-center space-x-4">
+                <h3 class="text-lg font-medium">Selected Users ({selectedEntries.length})</h3>
+                {#if selectedEntries.length > 0}
+                  <button
+                    type="button"
+                    on:click={() => showRemoveAllConfirm = true}
+                    class="text-sm text-red-600 hover:text-red-800"
+                  >
+                    Remove All
+                  </button>
+                {/if}
+              </div>
               {#if !entriesValid}
                 <p class="text-sm text-red-600">Add at least one user to your list</p>
               {/if}
             </div>
+            
+            <!-- Remove All Confirmation Modal -->
+            {#if showRemoveAllConfirm}
+              <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full">
+                  <h3 class="text-xl font-bold text-gray-900 mb-4">Remove All Users</h3>
+                  <p class="text-gray-700 mb-6">
+                    Are you sure you want to remove all users from your list? This action cannot be undone.
+                  </p>
+                  <div class="flex justify-end space-x-3">
+                    <button 
+                      on:click={cancelRemoveAll} 
+                      class="btn btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      on:click={confirmRemoveAll} 
+                      class="btn btn-error"
+                    >
+                      Remove All
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {/if}
             
             {#if selectedEntries.length === 0}
               <div class="bg-gray-50 border border-gray-200 rounded-md p-4 text-center text-gray-500">

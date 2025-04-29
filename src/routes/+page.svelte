@@ -24,7 +24,7 @@
   const filterOptions = [
     { value: FILTER_NONE, label: 'Show all packs' },
     { value: FILTER_USER_FOLLOWS, label: 'From users I follow' },
-    { value: FILTER_USER_INCLUDED, label: 'Packs including me' }
+    { value: FILTER_USER_INCLUDED, label: 'Packs I\'m in' }
   ];
 
   // Get the current filter label
@@ -228,7 +228,7 @@
       <div class="flex justify-end mb-6">
         <div class="relative" id="filter-dropdown">
           <button 
-            class="appearance-none bg-white border border-gray-200 rounded-md pl-4 pr-10 py-3 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all min-w-[220px] font-medium text-sm flex items-center justify-between"
+            class="appearance-none bg-white border border-gray-200 rounded-md pl-4 pr-10 py-3 text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all min-w-[180px] font-medium text-sm flex items-center justify-between"
             on:click|stopPropagation={() => dropdownOpen = !dropdownOpen}
           >
             <span>{currentFilterLabel}</span>

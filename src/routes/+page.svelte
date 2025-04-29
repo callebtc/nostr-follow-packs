@@ -59,8 +59,21 @@
     const newListIds = new Set(moreLists.map(list => list.id));
     const uniqueNewLists = moreLists.filter(list => !followLists.some(existing => existing.id === list.id));
     followLists = [...followLists, ...uniqueNewLists];
-    
     loadingMore = false;
+
+    // Load author profiles for each list one by one
+    for (let i = 0; i < followLists.length; i++) {
+      // Load author profile
+      const listWithAuthor = await getAuthorProfile(followLists[i]);
+      if (listWithAuthor) {
+        followLists[i] = listWithAuthor;
+        // Force reactivity by reassigning the array
+        followLists = [...followLists];
+      }
+      // Load profile info for entries
+      loadProfilesForList(i);
+    }
+
   }
 
   async function loadAllFollowLists() {

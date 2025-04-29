@@ -19,12 +19,11 @@ if (!fs.existsSync(CACHE_DIR)) {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-
     const url = new URL(event.request.url);
     const pathname = url.pathname;
 
     // Only handle paths that match the follow list pattern
-    const followListMatch = pathname.match(/^\/d\/([a-zA-Z0-9]+)$/);
+    const followListMatch = pathname.match(/^\/d\/([a-zA-Z0-9-]+)$/);
 
     if (followListMatch) {
         const listId = followListMatch[1];

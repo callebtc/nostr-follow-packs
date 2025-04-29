@@ -122,8 +122,34 @@
 <div class="bg-white rounded-lg shadow-sm overflow-hidden timeline-container mx-auto">
   <!-- Loading state -->
   {#if loading}
-    <div class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+    <div class="divide-y divide-gray-200">
+      {#each Array(5) as _, i}
+        <div class="p-4 sm:p-8 animate-pulse">
+          <!-- Post header with user info skeleton -->
+          <div class="flex items-start mb-3">
+            <div class="w-10 h-10 rounded-full bg-gray-200 mr-4"></div>
+            <div class="flex-grow">
+              <div class="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+              <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+            </div>
+            <!-- Follow button skeleton -->
+            <div class="h-8 bg-gray-200 rounded w-20"></div>
+          </div>
+          
+          <!-- Post content skeleton -->
+          <div class="mb-3">
+            <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+            <div class="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+          
+          <!-- Hashtags skeleton -->
+          <div class="flex flex-wrap gap-2 mt-2">
+            <div class="h-6 bg-gray-200 rounded-full w-16"></div>
+            <div class="h-6 bg-gray-200 rounded-full w-20"></div>
+          </div>
+        </div>
+      {/each}
     </div>
   
   <!-- Error state -->
@@ -142,7 +168,7 @@
   {:else}
     <ul class="divide-y divide-gray-200">
       {#each posts as post}
-        <li class="p-4 sm:p-6">
+        <li class="p-4 sm:p-8">
           <!-- Post header with user info -->
           <div class="flex items-start mb-3">
             <button on:click={() => openProfilePage(post.pubkey)}>

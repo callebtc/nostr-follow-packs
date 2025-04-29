@@ -145,11 +145,7 @@
   <!-- Loading state -->
   {#if loading}
     <div class="mb-8 relative animate-pulse">
-      <div class="h-60 rounded-lg overflow-hidden bg-gray-200">
-        <div class="flex justify-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mt-12"></div>
-        </div>
-      </div>
+      <div class="h-60 rounded-lg overflow-hidden bg-gray-200"></div>
       
       <div class="mt-6 flex flex-col-reverse sm:flex-row justify-between items-start gap-4 sm:gap-0">
         <!-- text elements -->

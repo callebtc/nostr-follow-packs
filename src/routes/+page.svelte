@@ -212,6 +212,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Following._ Nostr Follow Packs</title>
+</svelte:head>
+
 <div class="container py-10">
   <!-- Hero section -->
   <div class="text-center mb-12">

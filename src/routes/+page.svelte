@@ -107,6 +107,8 @@
       // Append new lists to existing ones, avoiding duplicates
       const uniqueNewLists = moreLists.filter(list => !followLists.some(existing => existing.id === list.id));
       followLists = [...followLists, ...uniqueNewLists];
+
+      loadingMore = false;
       
       // Load author profiles for each list one by one
       for (let i = 0; i < followLists.length; i++) {

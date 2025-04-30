@@ -88,32 +88,44 @@
     
     loadingMore = true;
     
-    // Get the oldest list's timestamp
-    const oldestList = followLists[followLists.length - 1];
-    const until = oldestList.createdAt;
-    
-    // Load more lists
-    const moreLists = await loadFollowLists(until);
-    
-    // Append new lists to existing ones, avoiding duplicates
-    const newListIds = new Set(moreLists.map(list => list.id));
-    const uniqueNewLists = moreLists.filter(list => !followLists.some(existing => existing.id === list.id));
-    followLists = [...followLists, ...uniqueNewLists];
-    loadingMore = false;
-
-    // Load author profiles for each list one by one
-    for (let i = 0; i < followLists.length; i++) {
-      // Load author profile
-      const listWithAuthor = await getAuthorProfile(followLists[i]);
-      if (listWithAuthor) {
-        followLists[i] = listWithAuthor;
-        // Force reactivity by reassigning the array
-        followLists = [...followLists];
+    try {
+      // Get the oldest list's timestamp
+      const oldestList = followLists[followLists.length - 1];
+      const until = oldestList.createdAt;
+      
+      // Create a promise that resolves after 5 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out after 5 seconds')), 5000);
+      });
+      
+      // Race between the actual request and the timeout
+      const moreLists = await Promise.race([
+        loadFollowLists(until),
+        timeoutPromise
+      ]) as FollowList[];
+      
+      // Append new lists to existing ones, avoiding duplicates
+      const uniqueNewLists = moreLists.filter(list => !followLists.some(existing => existing.id === list.id));
+      followLists = [...followLists, ...uniqueNewLists];
+      
+      // Load author profiles for each list one by one
+      for (let i = 0; i < followLists.length; i++) {
+        // Load author profile
+        const listWithAuthor = await getAuthorProfile(followLists[i]);
+        if (listWithAuthor) {
+          followLists[i] = listWithAuthor;
+          // Force reactivity by reassigning the array
+          followLists = [...followLists];
+        }
+        // Load profile info for entries
+        loadProfilesForList(i);
       }
-      // Load profile info for entries
-      loadProfilesForList(i);
+    } catch (error) {
+      console.error('Error loading more follow lists:', error);
+      // Show error message to the user (optional)
+    } finally {
+      loadingMore = false;
     }
-
   }
 
   async function loadAllFollowLists() {

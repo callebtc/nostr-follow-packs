@@ -18,6 +18,20 @@ if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
 
+/**
+ * Creates a promise that times out after the specified duration
+ * @param promise The promise to race against the timeout
+ * @param timeoutMs Timeout duration in milliseconds
+ * @param errorMessage Error message to throw on timeout
+ */
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+    const timeoutPromise = new Promise<T>((_, reject) => {
+        setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+    });
+
+    return Promise.race([promise, timeoutPromise]);
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
     console.log('handle event', event.request.url);
     const url = new URL(event.request.url);
@@ -56,10 +70,26 @@ export const handle: Handle = async ({ event, resolve }) => {
                 if (!metadataExists) {
                     // Fetch the follow list data
                     console.log('[!metadataExists] Connecting to relays');
-                    await ndk.connect();
-                    followList = await getFollowListById(listId);
-                    if (followList) {
-                        fs.writeFileSync(cacheFollowListMetadataPath, JSON.stringify(followList));
+                    try {
+                        await withTimeout(
+                            ndk.connect(),
+                            1000,
+                            'Connection to nostr relays timed out'
+                        );
+
+                        followList = await withTimeout(
+                            getFollowListById(listId),
+                            5000,
+                            'Fetching follow list data timed out'
+                        );
+
+                        if (followList) {
+                            fs.writeFileSync(cacheFollowListMetadataPath, JSON.stringify(followList));
+                        }
+                    } catch (error) {
+                        console.error('Error connecting or fetching follow list:', error);
+                        // return new Response('Error fetching follow list data: Request timed out', { status: 504 });
+                        throw error;
                     }
                 } else {
                     followList = JSON.parse(fs.readFileSync(cacheFollowListMetadataPath, 'utf8'));
@@ -81,12 +111,26 @@ export const handle: Handle = async ({ event, resolve }) => {
                     // Generate the image if it doesn't exist or is too old
                     // Fetch the follow list data
                     console.log('[!imageExists] Connecting to relays');
-                    await ndk.connect();
-                    console.log('[!imageExists] Follow list:', followList);
-                    console.log('[!imageExists] Generating image');
+                    try {
+                        await withTimeout(
+                            ndk.connect(),
+                            1000,
+                            'Connection to nostr relays timed out'
+                        );
 
+                        console.log('[!imageExists] Follow list:', followList);
+                        console.log('[!imageExists] Generating image');
 
-                    await generatePreviewImage(followList, cachePath);
+                        await withTimeout(
+                            generatePreviewImage(followList, cachePath),
+                            10000,
+                            'Generating preview image timed out'
+                        );
+                    } catch (error) {
+                        console.error('Error generating preview image:', error);
+                        // Fallback to default image or continue without image
+                        // We can still serve the page even if image generation fails
+                    }
                 }
                 // Modify the response to include meta tags for social media
                 const response = await resolve(event);
@@ -117,6 +161,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                 });
             } catch (error) {
                 console.error('Error generating social media preview:', error);
+                // just resolve the request
+                return resolve(event);
             }
         }
     }

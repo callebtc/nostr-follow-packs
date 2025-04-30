@@ -140,6 +140,19 @@
 
 <svelte:head>
   <title>Following._ {followList?.name || 'Loading...'}</title>
+  <meta name="title" content="{followList?.name || 'Loading...'}" />
+  <meta name="description" content="{followList?.description || 'A Nostr Follow Pack'}" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="{followList?.name || 'Loading...'}" />
+  <meta property="og:description" content="{followList?.description || 'A Nostr Follow Pack'}" />
+  <meta property="og:image" content="{followList?.coverImageUrl}" />
+  <meta property="og:url" content="{$page.url.pathname}"/>
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="{followList?.name || 'Loading...'}" />
+  <meta property="twitter:description" content="{followList?.description || 'A Nostr Follow Pack'}" />
+  <meta property="twitter:image" content="{followList?.coverImageUrl}" />
 </svelte:head>
 
 <div class="container py-10 people-container">

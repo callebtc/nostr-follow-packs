@@ -9,6 +9,7 @@ import {
     NDKUser
 } from '@nostr-dev-kit/ndk';
 import { ndk } from '$lib/nostr/ndk';
+import { nip04, nip44 } from 'nostr-tools';
 import * as nostrTools from 'nostr-tools';
 
 // Login method types
@@ -261,15 +262,55 @@ export function listenForNostrConnectResponse(clientPubkey: string, secret: stri
                     // Only process events from the remote signer
                     const remotePubkey = event.pubkey;
 
-                    // Let NDK do the decryption for us
-                    event.decrypt().then(decryptedContent => {
-                        try {
-                            if (decryptedContent === null || decryptedContent === undefined) {
-                                logDebug('Failed to decrypt event content');
-                                return;
-                            }
+                    // For NIP-07, we need to delegate decryption to the extension
+                    if (typeof window !== 'undefined' && (window as any).nostr && ndk.signer instanceof NDKNip07Signer) {
+                        const nostrObj = (window as any).nostr;
 
-                            const response = JSON.parse(decryptedContent);
+                        // Use the browser extension to decrypt
+                        nostrObj.nip04.decrypt(remotePubkey, event.content)
+                            .then((decryptedContent: string) => {
+                                processDecryptedContent(decryptedContent);
+                            })
+                            .catch((error: any) => {
+                                const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                                logDebug('Failed to decrypt with extension:', errorMsg);
+
+                                // Fall back to NDK's decrypt
+                                fallbackDecrypt();
+                            });
+                    } else {
+                        // Use NDK's built-in decrypt for non-NIP-07 signers
+                        fallbackDecrypt();
+                    }
+
+                    // Use NDK's built-in decryption as fallback
+                    function fallbackDecrypt() {
+                        // The event.decrypt() method returns a Promise<void> but updates the event's content
+                        event.decrypt()
+                            .then(() => {
+                                // After decryption, check if we have content
+                                // NDK might update the event content directly
+                                if (event.content) {
+                                    try {
+                                        // Attempt to parse the content as JSON directly
+                                        processDecryptedContent(event.content);
+                                    } catch (e) {
+                                        logDebug('Content is not valid JSON after decrypt');
+                                    }
+                                } else {
+                                    logDebug('No decrypted content available');
+                                }
+                            })
+                            .catch(error => {
+                                const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                                logDebug('Failed to decrypt with NDK:', errorMsg);
+                            });
+                    }
+
+                    // Process the decrypted content
+                    function processDecryptedContent(content: string) {
+                        try {
+                            const response = JSON.parse(content);
                             logDebug('Decrypted response:', response);
 
                             // Check if this is a proper response with the correct secret
@@ -295,10 +336,7 @@ export function listenForNostrConnectResponse(clientPubkey: string, secret: stri
                             const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown error';
                             logDebug('Failed to parse response:', errorMsg);
                         }
-                    }).catch(decryptError => {
-                        const errorMsg = decryptError instanceof Error ? decryptError.message : 'Unknown error';
-                        logDebug('Failed to decrypt event:', errorMsg);
-                    });
+                    }
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
                     console.error('Error processing connect response:', errorMsg);

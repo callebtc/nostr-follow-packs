@@ -293,7 +293,7 @@
                     Connect securely with your Nostr bunker app
                   </p>
                   
-                  <button
+                  <!-- <button
                     class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 mb-3"
                     on:click={startNostrConnect}
                     disabled={isLoading}
@@ -301,7 +301,7 @@
                     {isLoading ? 'Generating...' : 'Connect with QR Code'}
                   </button>
                   
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">or</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">or</p> -->
                   
                   <button
                     class="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"

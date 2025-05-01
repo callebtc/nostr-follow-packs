@@ -43,12 +43,13 @@
     // Check if we're in edit mode
     const editParam = $page.url.searchParams.get('edit');
     if (editParam) {
+      const pubkey = $page.url.searchParams.get('p');
       editMode = true;
       editId = editParam;
-      logDebug('Loading existing list for editing:', editId);
+      logDebug('Loading existing list for editing:', editId, pubkey);
       loading = true;
       try {
-        await loadExistingList(editParam);
+        await loadExistingList(editParam, pubkey ? pubkey : undefined);
       } finally {
         loading = false;
       }
@@ -90,9 +91,9 @@
   }
   
   // Load an existing list for editing
-  async function loadExistingList(id: string) {
+  async function loadExistingList(id: string, pubkey?: string) {
     try {
-      const list = await getFollowListById(id);
+      const list = await getFollowListById(id, pubkey);
       if (!list) {
         error = 'Could not find the follow list to edit';
         editMode = false;
@@ -249,13 +250,18 @@
     
     try {
       // Publish the follow list (same method for create and edit)
-      const id = await publishFollowList(name, coverImageUrl, selectedEntries, editMode ? listId : undefined, description);
-      logDebug('Published with ID:', id);
-      
-      if (id) {
+      const event = await publishFollowList(name, coverImageUrl, selectedEntries, editMode ? listId : undefined, description);
+      logDebug('Published event with ID:', event?.id);
+      if (event) {
         // Navigate to the new follow list
         logDebug('Redirecting to follow list page');
-        goto(`/d/${id}`);
+        const dTag = event.tags.find(tag => tag[0] === 'd');
+        if (!dTag) {
+          error = 'Failed to publish follow list. Please try again.';
+          logDebug('Publish failed - no ID returned');
+          return;
+        }
+        goto(`/d/${dTag[1]}?p=${event.pubkey}`);
       } else {
         error = 'Failed to publish follow list. Please try again.';
         logDebug('Publish failed - no ID returned');

@@ -1,5 +1,5 @@
 import { ndk } from '$lib/nostr/ndk';
-import { NDKEvent, type NDKFilter } from '@nostr-dev-kit/ndk';
+import NDK, { NDKEvent, type NDKFilter } from '@nostr-dev-kit/ndk';
 import {
     FOLLOW_LIST_KIND,
     parseFollowListEvent,
@@ -123,7 +123,7 @@ export async function getProfileInfoForEntries(list: FollowList, maxEntries: num
 /**
  * Get a single follow list by its event ID
  */
-export async function getFollowListById(id: string): Promise<FollowList | null> {
+export async function getFollowListById(id: string, pubkey?: string): Promise<FollowList | null> {
     // ensure that user is loaded 
     try {
         await loadUser();
@@ -132,13 +132,16 @@ export async function getFollowListById(id: string): Promise<FollowList | null> 
         logDebug('Error loading user:', error);
     }
 
-    logDebug('Fetching follow list by ID:', id);
+    logDebug('Fetching follow list by ID:', id, pubkey);
 
     try {
         // Fetch the specific event by ID
         // const filter = { ids: [id] };
         // fetch by filtering for d tag
-        const filter = { "#d": [id] };
+        const filter = { "#d": [id] } as NDKFilter;
+        if (pubkey) {
+            filter.authors = [pubkey];
+        }
         logDebug('Fetching with filter:', filter);
         logDebug('Current relays:', ndk.explicitRelayUrls);
 
@@ -190,7 +193,7 @@ export async function publishFollowList(
     entries: FollowListEntry[],
     id: string | undefined,
     description?: string
-): Promise<string | null> {
+): Promise<NDKEvent | null> {
     logDebug('Publishing follow list:', { name, coverImageUrl, entries: entries.length, description });
 
     try {
@@ -227,7 +230,7 @@ export async function publishFollowList(
         event.ndk = ndk;
         await event.publish();
 
-        return id;
+        return event;
     } catch (error) {
         console.error('Error publishing follow list:', error);
         logDebug('Error publishing follow list:', error);

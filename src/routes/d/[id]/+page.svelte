@@ -53,9 +53,9 @@
         error = true;
         return;
       }
-      
+      const pubkey = $page.url.searchParams.get('p');
       // Fetch the follow list
-      followList = await getFollowListById(listId);
+      followList = await getFollowListById(listId, pubkey ? pubkey : undefined);
       if (!followList) {
         error = true;
         return;
@@ -92,7 +92,7 @@
   // Handle edit button click
   function handleEdit() {
     if (!followList) return;
-    goto(`/create?edit=${followList.id}`);
+    goto(`/create?edit=${followList.id}&p=${followList.pubkey}`);
   }
 
   // Handle follow all button click

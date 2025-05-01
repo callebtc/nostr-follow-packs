@@ -323,7 +323,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {#each followLists as list}
           <a 
-            href="/d/{list.id}" 
+            href="/d/{list.id}?p={list.pubkey}" 
             class="bg-white rounded-lg shadow-sm overflow-hidden transition-transform hover:scale-[1.02]"
           >
             <!-- Cover image -->

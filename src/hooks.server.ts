@@ -41,7 +41,9 @@ export const handle: Handle = async ({ event, resolve }) => {
     const followListMatch = pathname.match(/^\/d\/([a-zA-Z0-9-]+)$/);
 
     if (followListMatch) {
+        // parse from /d/<listId>?p=<pubKey>
         const listId = followListMatch[1];
+        const pubKey = url.searchParams.get('p');
         const userAgent = event.request.headers.get('user-agent') || '';
 
         // Check if this is a bot or social media crawler, including Signal
@@ -63,7 +65,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                     const stats = fs.statSync(cacheFollowListMetadataPath);
                     const fileAge = Date.now() - stats.mtimeMs;
                     metadataExists = fileAge < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-                    console.log('Metadata exists:', metadataExists);
+                    console.log('Metadata exists since:', new Date(stats.mtimeMs).toISOString());
                 }
                 let followList: FollowList | null = null;
                 // test: fetch 
@@ -105,7 +107,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                     const stats = fs.statSync(cachePath);
                     const fileAge = Date.now() - stats.mtimeMs;
                     imageExists = fileAge < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-                    console.log('Image exists:', imageExists);
+                    console.log('Image exists since:', new Date(stats.mtimeMs).toISOString());
                 }
                 if (!imageExists) {
                     // Generate the image if it doesn't exist or is too old

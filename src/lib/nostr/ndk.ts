@@ -1,7 +1,6 @@
-import NDK, { NDKEvent, NDKNip07Signer } from '@nostr-dev-kit/ndk';
+import NDK from '@nostr-dev-kit/ndk';
 import { browser } from '$app/environment';
-import { loadUser, user } from '$lib/stores/user';
-import { get } from 'svelte/store';
+
 // Debug logging
 const DEBUG = true;
 const logDebug = (...args: any[]) => {

@@ -104,7 +104,7 @@
       
       // Create a promise that resolves after 5 seconds
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out after 5 seconds')), 5000);
+        setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
       });
       
       // Race between the actual request and the timeout

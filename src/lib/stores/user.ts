@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
-import NDK, { NDKEvent, NDKUser, NDKKind, NDKNip07Signer } from '@nostr-dev-kit/ndk';
-import { DEFAULT_RELAYS, ndk } from '$lib/nostr/ndk';
+import { NDKEvent, NDKKind, NDKNip07Signer } from '@nostr-dev-kit/ndk';
+import { ndk } from '$lib/nostr/ndk';
 import { browser } from '$app/environment';
 
 export interface UserProfile {
@@ -109,8 +109,8 @@ export async function loadUser(): Promise<void> {
         const cachedUser = localStorage.getItem(USER_CACHE_KEY);
         if (cachedUser) {
             user.set(JSON.parse(cachedUser));
+            return
         }
-
         // Make sure we have access to the extension
         if (!(await checkNip07Extension())) {
             throw new Error('NIP-07 extension not found');
@@ -119,11 +119,9 @@ export async function loadUser(): Promise<void> {
         // set the signer to the nip07 signer
         const nip07Signer = new NDKNip07Signer();
         logDebug('[loadUser] Created NIP-07 signer');
+        await nip07Signer.blockUntilReady();
         ndk.signer = nip07Signer;
-
-
-        ndk.connect();
-        logDebug('[loadUser] Connected to relays:', ndk.explicitRelayUrls);
+        console.log('[signer] Set NIP-07 signer', ndk.signer);
 
         loadUserProfile();
     } catch (error) {
@@ -134,7 +132,7 @@ export async function loadUser(): Promise<void> {
 
 export async function loadUserProfile() {
     // Get user public key from extension
-    const pubkey = await (window as any).nostr.getPublicKey();
+    const pubkey = ndk.signer?.pubkey || get(user)?.pubkey;
     if (!pubkey) {
         throw new Error('Failed to get public key from extension');
     }
@@ -196,7 +194,6 @@ export async function loadUserProfile() {
     }
     // Save the user profile to the store and cache
     user.set(userProfile);
-
     // append the global ndk instance with relays that are not already in the array
     // ndk.explicitRelayUrls.push(...Array.from(userProfile.relays).filter(relay => !ndk.explicitRelayUrls.includes(relay)));
     for (const relay of userProfile.relays) {

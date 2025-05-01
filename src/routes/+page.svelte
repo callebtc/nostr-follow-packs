@@ -58,18 +58,27 @@
 
   async function loadFollowLists(until?: number) {
     try {
-      await loadUser();
-      const ourUser = get(user);
       let lists: FollowList[] = [];
       
-      if (ourUser && filterType === FILTER_USER_FOLLOWS) {
-        const follows = ourUser.following;
-        const followsArray = follows ? Array.from(follows) : [];
-        followsArray.push(ourUser.pubkey);
-        lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
-      } else if (ourUser && filterType === FILTER_USER_INCLUDED) {
-        lists = await getFollowLists(LIST_LIMIT, undefined, until, undefined, [ourUser.pubkey]);
+      // Handle cases that need the current user
+      if (filterType === FILTER_USER_FOLLOWS || filterType === FILTER_USER_INCLUDED) {
+        // Get current user or load if needed
+        let ourUser = get(user);
+        if (!ourUser) await loadUser();
+        ourUser = get(user);
+        if (!ourUser) return [];
+        
+        if (filterType === FILTER_USER_FOLLOWS) {
+          // Get lists from followed users and self
+          const followsArray = ourUser.following ? Array.from(ourUser.following) : [];
+          followsArray.push(ourUser.pubkey);
+          lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
+        } else {
+          // Get lists that include the current user
+          lists = await getFollowLists(LIST_LIMIT, undefined, until, undefined, [ourUser.pubkey]);
+        }
       } else {
+        // No filter, get all lists
         lists = await getFollowLists(LIST_LIMIT, undefined, until);
       }
       
@@ -133,7 +142,7 @@
   async function loadAllFollowLists() {
     // Load follow lists first and render them immediately
     followLists = await loadFollowLists();
-      loading = false;
+    loading = false;
       
       // Then load author profiles for each list one by one
       for (let i = 0; i < followLists.length; i++) {

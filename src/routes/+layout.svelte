@@ -1,18 +1,13 @@
 <script lang="ts">
   import '../app.css';
   import { onMount } from 'svelte';
-  import { user, loadUser, checkNip07Extension } from '$lib/stores/user';
-  import { page } from '$app/stores';
+  import { user, loadUser } from '$lib/stores/user';
   import { goto } from '$app/navigation';
 
-  let hasExtension = false;
   let showUserMenu = false;
 
   onMount(async () => {
-    hasExtension = await checkNip07Extension();
-    if (hasExtension) {
       await loadUser();
-    }
     
     // Close menu when clicking outside
     document.addEventListener('click', (e) => {
@@ -23,10 +18,6 @@
   });
 
   function handleLogin() {
-    if (!hasExtension) {
-      alert('Please install a NIP-07 compatible browser extension like Alby or nos2x');
-      return;
-    }
     loadUser();
   }
   

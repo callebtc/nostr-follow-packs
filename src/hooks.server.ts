@@ -45,7 +45,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         const userAgent = event.request.headers.get('user-agent') || '';
 
         // Check if this is a bot or social media crawler, including Signal
-        const isCrawler = /bot|facebook|twitter|slack|discord|telegram|linkedin|whatsapp|signal/i.test(userAgent);
+        const isCrawler = /bot|facebook|twitter|slack|discord|telegram|linkedin|whatsapp|signal|Amethyst/i.test(userAgent);
         // TEST: always generate image
         if (isCrawler) {
             try {

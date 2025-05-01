@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import { onMount } from 'svelte';
-  import { user, loadUser } from '$lib/stores/user';
+  import { user, loadUser, unloadUser } from '$lib/stores/user';
   import { goto } from '$app/navigation';
 
   let showUserMenu = false;
@@ -19,6 +19,10 @@
 
   function handleLogin() {
     loadUser();
+  }
+
+  function handleLogout() {
+    unloadUser();
   }
   
   function toggleUserMenu(e: MouseEvent) {
@@ -63,13 +67,21 @@
             </button>
             
             {#if showUserMenu}
-              <div class="absolute right-0 mt-2 w-48 py-2 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                <button
-                  on:click={navigateToSettings}
-                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Settings
-                </button>
+              <div class="relative">
+                <div class="absolute right-0 mt-2 w-48 py-2 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  <button
+                    on:click={navigateToSettings}
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Settings
+                  </button>
+                  <button
+                    on:click={handleLogout}
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             {/if}
           </div>

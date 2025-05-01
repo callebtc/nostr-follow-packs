@@ -130,6 +130,32 @@ export async function loadUser(): Promise<void> {
     }
 }
 
+export async function unloadUser(): Promise<void> {
+    if (!browser) return;
+    try {
+        // if user is not loaded, return
+        if (!get(user)) return;
+
+        console.log('[unloadUser] unloading user')
+
+        // Check if we have a cached user profile
+        const cachedUser = localStorage.getItem(USER_CACHE_KEY);
+        if (cachedUser) {
+            // Remove cached user profile
+            user.set(null);
+            localStorage.removeItem(USER_CACHE_KEY);
+
+            // Reload to lose the current npub, maybe you find a better way.
+            window.location.reload();
+
+            return
+        }
+    } catch (error) {
+        console.error('Error unloading user:', error);
+        user.set(null);
+    }
+}
+
 export async function loadUserProfile() {
     // Get user public key from extension
     const pubkey = ndk.signer?.pubkey || get(user)?.pubkey;

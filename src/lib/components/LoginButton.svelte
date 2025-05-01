@@ -40,7 +40,7 @@
   {:else}
     <button 
       on:click={openLoginModal}
-      class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600"
+      class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg dark:bg-purple-500 dark:hover:bg-purple-600"
     >
       Log in
     </button>

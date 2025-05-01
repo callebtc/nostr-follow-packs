@@ -2,12 +2,20 @@
   import '../app.css';
   import { onMount } from 'svelte';
   import { user, loadUser } from '$lib/stores/user';
+  import { initializeSigner } from '$lib/stores/login';
   import { goto } from '$app/navigation';
+  import LoginButton from '$lib/components/LoginButton.svelte';
 
   let showUserMenu = false;
 
   onMount(async () => {
+    // Try to initialize signer from saved login state
+    const signerInitialized = await initializeSigner();
+    
+    // Only try to load user if signer was successfully initialized
+    if (signerInitialized) {
       await loadUser();
+    }
     
     // Close menu when clicking outside
     document.addEventListener('click', (e) => {
@@ -16,10 +24,6 @@
       }
     });
   });
-
-  function handleLogin() {
-    loadUser();
-  }
   
   function toggleUserMenu(e: MouseEvent) {
     e.stopPropagation();
@@ -74,9 +78,7 @@
             {/if}
           </div>
         {:else}
-          <button on:click={handleLogin} class="btn btn-primary mt-2">
-            Login with Extension
-          </button>
+          <LoginButton />
         {/if}
       </div>
     </div>

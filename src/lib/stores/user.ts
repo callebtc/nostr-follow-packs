@@ -1,7 +1,8 @@
 import { writable, get } from 'svelte/store';
-import { NDKEvent, NDKKind, NDKNip07Signer } from '@nostr-dev-kit/ndk';
+import { NDKEvent, NDKKind } from '@nostr-dev-kit/ndk';
 import { ndk } from '$lib/nostr/ndk';
 import { browser } from '$app/environment';
+import { isLoggedIn } from './login';
 
 export interface UserProfile {
     pubkey: string;
@@ -88,15 +89,7 @@ function saveFollowSnapshot(event: NDKEvent, pubkeys: string[]) {
 }
 
 /**
- * Check if a NIP-07 extension is available in the browser
- */
-export async function checkNip07Extension(): Promise<boolean> {
-    if (typeof window === 'undefined') return false;
-    return !!(window as any).nostr;
-}
-
-/**
- * Load the user profile from the extension and set it in the store
+ * Load the user profile and set it in the store
  */
 export async function loadUser(): Promise<void> {
     if (!browser) return;
@@ -111,17 +104,16 @@ export async function loadUser(): Promise<void> {
             user.set(JSON.parse(cachedUser));
             return
         }
-        // Make sure we have access to the extension
-        if (!(await checkNip07Extension())) {
-            throw new Error('NIP-07 extension not found');
+
+        // Check if the user is logged in through any method
+        if (!isLoggedIn()) {
+            throw new Error('User not logged in');
         }
 
-        // set the signer to the nip07 signer
-        const nip07Signer = new NDKNip07Signer();
-        logDebug('[loadUser] Created NIP-07 signer');
-        await nip07Signer.blockUntilReady();
-        ndk.signer = nip07Signer;
-        console.log('[signer] Set NIP-07 signer', ndk.signer);
+        // Make sure we have a signer set
+        if (!ndk.signer) {
+            throw new Error('No signer available');
+        }
 
         loadUserProfile();
     } catch (error) {
@@ -131,10 +123,10 @@ export async function loadUser(): Promise<void> {
 }
 
 export async function loadUserProfile() {
-    // Get user public key from extension
+    // Get user public key from the signer
     const pubkey = ndk.signer?.pubkey || get(user)?.pubkey;
     if (!pubkey) {
-        throw new Error('Failed to get public key from extension');
+        throw new Error('Failed to get public key from signer');
     }
     logDebug("[loadUserProfile] Public key:", pubkey);
     // Fetch the user metadata and following list

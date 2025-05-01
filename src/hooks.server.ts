@@ -46,8 +46,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 
         // Check if this is a bot or social media crawler, including Signal
         const isCrawler = /bot|facebook|twitter|slack|discord|telegram|linkedin|whatsapp|signal/i.test(userAgent);
-
-        if (isCrawler) {
+        // TEST: always generate image
+        if (isCrawler || true) {
             try {
                 // Generate a cached image filename
                 const cacheFilename = `${listId}.png`;

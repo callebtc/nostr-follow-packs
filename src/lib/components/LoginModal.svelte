@@ -287,30 +287,30 @@
         {#if activeTab === 'bunker'}
           <div class="space-y-4">
             {#if !nostrConnectUrl}
-              <div class="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
-                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                  Connect securely with your Nostr bunker app
-                </p>
-                
-                <button
-                  class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 mb-3"
-                  on:click={startNostrConnect}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Generating...' : 'Connect with QR Code'}
-                </button>
-                
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">or</p>
-                
-                <button
-                  class="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  on:click={toggleManualBunkerInput}
-                >
-                  Enter Bunker URL Manually
-                </button>
-              </div>
-              
-              {#if showManualBunkerInput}
+              {#if !showManualBunkerInput}
+                <div class="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                    Connect securely with your Nostr bunker app
+                  </p>
+                  
+                  <button
+                    class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 mb-3"
+                    on:click={startNostrConnect}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Generating...' : 'Connect with QR Code'}
+                  </button>
+                  
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">or</p>
+                  
+                  <button
+                    class="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                    on:click={toggleManualBunkerInput}
+                  >
+                    Enter Bunker URL Manually
+                  </button>
+                </div>
+              {:else}
                 <div class="space-y-2 text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
                   <label for="bunkerUri" class="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Bunker URI
@@ -326,13 +326,24 @@
                     <p class="text-red-500 text-xs">URI must start with bunker://</p>
                   {/if}
 
-                  <button
-                    class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 mt-3"
-                    on:click={handleBunkerLogin}
-                    disabled={isLoading || !bunkerUrl.trim() || !bunkerUrl.startsWith('bunker://')}
-                  >
-                    {isLoading ? 'Connecting...' : 'Connect with Bunker URL'}
-                  </button>
+                  <div class="flex space-x-2 mt-3">
+                    <button
+                      class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600"
+                      on:click={handleBunkerLogin}
+                      disabled={isLoading || !bunkerUrl.trim() || !bunkerUrl.startsWith('bunker://')}
+                    >
+                      {isLoading ? 'Connecting...' : 'Connect with Bunker URL'}
+                    </button>
+                    
+                    <button
+                      class="py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg dark:bg-red-500 dark:hover:bg-red-600 flex items-center"
+                      on:click={toggleManualBunkerInput}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               {/if}
             {:else}

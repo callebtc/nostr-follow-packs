@@ -1,20 +1,24 @@
 <script lang="ts">
   import '../app.css';
   import { onMount } from 'svelte';
-  import { user, loadUser } from '$lib/stores/user';
-  import { initializeSigner } from '$lib/stores/login';
+  import { user } from '$lib/stores/user';
   import { goto } from '$app/navigation';
+  import { logoutUser } from '$lib/services/logout';
+  import { initializeAuth } from '$lib/services/auth';
   import LoginButton from '$lib/components/LoginButton.svelte';
+  import { browser } from '$app/environment';
 
   let showUserMenu = false;
+  let showLogoutConfirm = false;
+  let loggingOut = false;
+  let authInitialized = false;
 
   onMount(async () => {
-    // Try to initialize signer from saved login state
-    const signerInitialized = await initializeSigner();
-    
-    // Only try to load user if signer was successfully initialized
-    if (signerInitialized) {
-      await loadUser();
+    if (browser && !authInitialized) {
+      authInitialized = true;
+      
+      // Initialize auth using our centralized service
+      await initializeAuth();
     }
     
     // Close menu when clicking outside
@@ -33,6 +37,29 @@
   function navigateToSettings() {
     showUserMenu = false;
     goto('/settings');
+  }
+
+  function handleLogout() {
+    showUserMenu = false;
+    showLogoutConfirm = true;
+  }
+
+  async function confirmLogout() {
+    loggingOut = true;
+    
+    try {
+      // Use the centralized logout service
+      await logoutUser();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      loggingOut = false;
+      showLogoutConfirm = false;
+    }
+  }
+
+  function cancelLogout() {
+    showLogoutConfirm = false;
   }
 </script>
 
@@ -74,6 +101,12 @@
                 >
                   Settings
                 </button>
+                <button
+                  on:click={handleLogout}
+                  class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                >
+                  Logout
+                </button>
               </div>
             {/if}
           </div>
@@ -83,6 +116,34 @@
       </div>
     </div>
   </header>
+
+  <!-- Logout Confirmation Modal -->
+  {#if showLogoutConfirm}
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Logout Confirmation</h3>
+        <p class="text-gray-700 mb-6">
+          Are you sure you want to log out? You will need to log in again to access your account.
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button 
+            on:click={cancelLogout} 
+            class="btn btn-secondary"
+            disabled={loggingOut}
+          >
+            Cancel
+          </button>
+          <button 
+            on:click={confirmLogout} 
+            class="btn btn-error"
+            disabled={loggingOut}
+          >
+            {loggingOut ? 'Logging out...' : 'Logout'}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <main class="flex-1">
     <slot />

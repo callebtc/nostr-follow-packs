@@ -5,9 +5,11 @@ import {
     NDKPrivateKeySigner,
     NDKNip46Signer,
     NDKEvent,
-    NDKSubscription
+    NDKSubscription,
+    NDKUser
 } from '@nostr-dev-kit/ndk';
 import { ndk } from '$lib/nostr/ndk';
+import * as nostrTools from 'nostr-tools';
 
 // Login method types
 export enum LoginMethod {
@@ -192,18 +194,21 @@ export async function loginWithBunker(bunkerUrl: string): Promise<boolean> {
  */
 export async function generateNostrConnectUrl(): Promise<{ url: string, clientPubkey: string, secret: string }> {
     try {
-        // Create a new keypair for the client
-        // For testing purposes, we'll create a random private key
-        const privateKey = randomPrivateKey();
-        const clientSigner = new NDKPrivateKeySigner(privateKey);
-        await clientSigner.blockUntilReady();
+        // Create a temporary signer for this connection
+        const tempSigner = new NDKNip07Signer();
+        await tempSigner.blockUntilReady();
 
-        // Get the public key from the private key
-        const clientPubkey = getPublicKey(privateKey);
+        // Get the client's public key
+        if (!tempSigner.user) {
+            throw new Error('Failed to get user object from signer');
+        }
 
-        if (!clientPubkey) {
+        const user = await tempSigner.user();
+        if (!user || !user.pubkey) {
             throw new Error('Failed to get client public key');
         }
+
+        const clientPubkey = user.pubkey;
 
         // Generate a random secret
         const secret = generateRandomString(8);
@@ -217,37 +222,14 @@ export async function generateNostrConnectUrl(): Promise<{ url: string, clientPu
         const relayParams = relays.map(relay => `relay=${encodeURIComponent(relay)}`).join('&');
         const connectUrl = `nostrconnect://${clientPubkey}?${relayParams}&secret=${secret}&perms=sign_event&name=NostrFollowList`;
 
-        // Set the client keypair as our temporary signer (we'll replace it when the connection is established)
-        ndk.signer = clientSigner;
+        // Set the client keypair as our temporary signer
+        ndk.signer = tempSigner;
 
         return { url: connectUrl, clientPubkey, secret };
     } catch (error) {
         console.error('Error generating nostrconnect URL:', error);
         throw error;
     }
-}
-
-/**
- * Generate a random private key
- */
-function randomPrivateKey(): string {
-    // This is a simplified version for testing
-    // In production, use a proper cryptographic library
-    const chars = '0123456789abcdef';
-    let result = '';
-    for (let i = 0; i < 64; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-}
-
-/**
- * Get public key from private key
- */
-function getPublicKey(privateKey: string): string {
-    // Simplified for testing - in production, use proper key derivation
-    // For now, we'll just return a fake public key based on the private key
-    return privateKey.split('').reverse().join('');
 }
 
 /**
@@ -277,47 +259,51 @@ export function listenForNostrConnectResponse(clientPubkey: string, secret: stri
                 return { ...status, subscription: sub };
             });
 
-            sub.on('event', async (event: NDKEvent) => {
+            sub.on('event', (event: NDKEvent) => {
                 try {
                     logDebug('Received potential connect response:', event);
 
                     // Only process events from the remote signer
                     const remotePubkey = event.pubkey;
 
-                    try {
-                        // Decrypt the event content
-                        const decryptedContent = await event.decrypt();
+                    // Let NDK do the decryption for us
+                    event.decrypt().then(decryptedContent => {
+                        try {
+                            if (decryptedContent === null || decryptedContent === undefined) {
+                                logDebug('Failed to decrypt event content');
+                                return;
+                            }
 
-                        if (typeof decryptedContent !== 'string' || !decryptedContent) {
-                            logDebug('Failed to decrypt event content or content is not a string');
-                            return;
+                            const response = JSON.parse(decryptedContent);
+                            logDebug('Decrypted response:', response);
+
+                            // Check if this is a proper response with the correct secret
+                            if (response.result === secret) {
+                                logDebug('Connection established with bunker:', remotePubkey);
+
+                                // Close the subscription
+                                sub.stop();
+
+                                // Update connection status
+                                connectStatus.set({
+                                    status: 'connected',
+                                    message: 'Connected to bunker!'
+                                });
+
+                                // Create the bunker URL with the remote signer pubkey
+                                const bunkerUrl = `bunker://${remotePubkey}`;
+
+                                // Resolve with the bunker URL
+                                resolve(bunkerUrl);
+                            }
+                        } catch (parseError) {
+                            const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown error';
+                            logDebug('Failed to parse response:', errorMsg);
                         }
-
-                        const response = JSON.parse(decryptedContent);
-
-                        // Check if this is a proper response with the correct secret
-                        if (response.result === secret) {
-                            logDebug('Connection established with bunker:', remotePubkey);
-
-                            // Close the subscription
-                            sub.stop();
-
-                            // Update connection status
-                            connectStatus.set({
-                                status: 'connected',
-                                message: 'Connected to bunker!'
-                            });
-
-                            // Create the bunker URL with the remote signer pubkey
-                            const bunkerUrl = `bunker://${remotePubkey}`;
-
-                            // Resolve with the bunker URL
-                            resolve(bunkerUrl);
-                        }
-                    } catch (decryptError) {
+                    }).catch(decryptError => {
                         const errorMsg = decryptError instanceof Error ? decryptError.message : 'Unknown error';
-                        logDebug('Failed to process event:', errorMsg);
-                    }
+                        logDebug('Failed to decrypt event:', errorMsg);
+                    });
                 } catch (error) {
                     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
                     console.error('Error processing connect response:', errorMsg);
@@ -379,8 +365,41 @@ function generateRandomString(length: number): string {
  * Initialize signer based on saved login state
  */
 export async function initializeSigner(): Promise<boolean> {
-    const state = get(loginState);
+    if (!browser) {
+        return false;
+    }
 
+    // Get the current login state
+    const state = get(loginState);
+    logDebug('Initializing signer with state:', state);
+
+    // If not logged in according to store, check localStorage as a backup
+    if (!state.loggedIn) {
+        const savedState = localStorage.getItem(LOGIN_STATE_KEY);
+        if (savedState) {
+            try {
+                const parsedState = JSON.parse(savedState);
+                if (parsedState.loggedIn) {
+                    loginState.set(parsedState);
+                    logDebug('Restored login state from localStorage:', parsedState);
+                    // Continue with the restored state
+                    return await initializeSignerFromState(parsedState);
+                }
+            } catch (error) {
+                console.error('Error parsing login state from localStorage:', error);
+            }
+        }
+        return false;
+    }
+
+    // If we have a logged in state, initialize the appropriate signer
+    return await initializeSignerFromState(state);
+}
+
+/**
+ * Helper function to initialize signer from a specific state
+ */
+async function initializeSignerFromState(state: LoginState): Promise<boolean> {
     if (!state.loggedIn) {
         return false;
     }
@@ -403,10 +422,13 @@ export async function initializeSigner(): Promise<boolean> {
                 break;
 
             default:
+                logDebug('Unknown login method:', state.method);
                 return false;
         }
     } catch (error) {
         console.error('Error initializing signer:', error);
+        // Reset login state on error
+        logout();
         return false;
     }
 

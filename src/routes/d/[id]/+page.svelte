@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { user, followUsers, loadUser } from '$lib/stores/user';
+  import { user, followUsers } from '$lib/stores/user';
   import { getFollowListById, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
   import { goto } from '$app/navigation';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
@@ -11,6 +11,7 @@
   import FollowButton from '$lib/components/FollowButton.svelte';
   import { hexToNpub } from '$lib/services/vertex-search';
   import CopyEvent from '$lib/components/CopyEvent.svelte';
+  import { initOptionalAuth } from '$lib/services/auth';
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
@@ -43,14 +44,15 @@
 
   onMount(async () => {
     try {
+      // Initialize optional authentication (will work whether user is logged in or not)
+      await initOptionalAuth();
+      
       // Get the list ID from the URL
       const listId = $page.params.id;
       if (!listId) {
         error = true;
         return;
       }
-      // load the user
-      loadUser();
       
       // Fetch the follow list
       followList = await getFollowListById(listId);

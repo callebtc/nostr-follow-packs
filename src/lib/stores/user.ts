@@ -93,38 +93,79 @@ function saveFollowSnapshot(event: NDKEvent, pubkeys: string[]) {
  */
 export async function loadUser(): Promise<void> {
     if (!browser) return;
-    try {
-        // if user is already loaded, return
-        if (get(user)) return;
 
-        console.log('[loadUser] Loading user')
-        // Check if we have a cached user profile
-        const cachedUser = localStorage.getItem(USER_CACHE_KEY);
-        if (cachedUser) {
-            user.set(JSON.parse(cachedUser));
-            return
+    logDebug('loadUser called');
+
+    try {
+        // Check if user is already loaded with valid data
+        const currentUser = get(user);
+        if (currentUser && currentUser.pubkey) {
+            logDebug('User already loaded:', currentUser.pubkey);
+            return;
         }
 
         // Check if the user is logged in through any method
         if (!isLoggedIn()) {
-            throw new Error('User not logged in');
+            logDebug('User not logged in, aborting loadUser');
+            return;
         }
 
         // Make sure we have a signer set
         if (!ndk.signer) {
-            throw new Error('No signer available');
+            throw new Error('No signer available, cannot load user profile');
         }
 
-        loadUserProfile();
+        // Check if we have a cached user profile
+        const cachedUser = localStorage.getItem(USER_CACHE_KEY);
+        if (cachedUser) {
+            try {
+                // Parse cached user with special handling for Set objects
+                const parsedUser = JSON.parse(cachedUser, (key, value) => {
+                    if (key === 'following' || key === 'relays') {
+                        return new Set(value);
+                    }
+                    return value;
+                });
+
+                // Only use cache if pubkey matches the current signer
+                const userNpub = await ndk.signer.user();
+                if (userNpub && userNpub.pubkey === parsedUser.pubkey) {
+                    logDebug('Using cached user profile:', parsedUser.pubkey);
+                    user.set(parsedUser);
+
+                    // Still load the profile in the background for fresh data
+                    loadUserProfile().catch(err => {
+                        console.error('Background profile refresh failed:', err);
+                    });
+                    return;
+                } else {
+                    logDebug('Cached user doesnt match current signer, loading fresh profile');
+                }
+            } catch (error) {
+                console.error('Error parsing cached user:', error);
+                // Continue to load fresh profile
+            }
+        }
+
+        logDebug('Loading fresh user profile');
+        await loadUserProfile();
     } catch (error) {
         console.error('Error loading user:', error);
         user.set(null);
     }
 }
 
+export async function getUserPubkey() {
+    if (!ndk.signer) {
+        throw new Error('No signer available');
+    }
+    const ndkUser = await ndk.signer.user();
+    return ndkUser?.pubkey || get(user)?.pubkey;
+}
+
 export async function loadUserProfile() {
     // Get user public key from the signer
-    const pubkey = ndk.signer?.pubkey || get(user)?.pubkey;
+    const pubkey = await getUserPubkey();
     if (!pubkey) {
         throw new Error('Failed to get public key from signer');
     }

@@ -23,6 +23,7 @@
   let isLoading = false;
   let isNip07Available = false;
   let showManualBunkerInput = false;
+  let bunkerError = '';
   
   // NostrConnect state
   let nostrConnectUrl = '';
@@ -158,6 +159,7 @@
   async function handleBunkerLogin() {
     if (!bunkerUrl.trim() || !bunkerUrl.startsWith('bunker://')) return;
     isLoading = true;
+    bunkerError = '';
     
     try {
       const success = await loginWithBunker(bunkerUrl);
@@ -165,9 +167,10 @@
         await loadUser();
         onLogin();
         onClose();
-      }
+      } 
     } catch (error) {
       console.error('Bunker login failed:', error);
+      bunkerError = error instanceof Error ? error.message : `Bunker login failed: ${error}`;
     } finally {
       isLoading = false;
     }
@@ -293,7 +296,7 @@
                     Connect securely with your Nostr bunker app
                   </p>
                   
-                  <!-- <button
+                  <button
                     class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 mb-3"
                     on:click={startNostrConnect}
                     disabled={isLoading}
@@ -301,7 +304,7 @@
                     {isLoading ? 'Generating...' : 'Connect with QR Code'}
                   </button>
                   
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">or</p> -->
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">or</p>
                   
                   <button
                     class="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -325,6 +328,11 @@
                   {#if bunkerUrl && !bunkerUrl.startsWith('bunker://')}
                     <p class="text-red-500 text-xs">URI must start with bunker://</p>
                   {/if}
+                  {#if bunkerError}
+                    <p class="text-red-500 text-xs">
+                      {bunkerError}
+                    </p>
+                  {/if}
 
                   <div class="flex space-x-2 mt-3">
                     <button
@@ -344,6 +352,8 @@
                       </svg>
                     </button>
                   </div>
+                  
+                  
                 </div>
               {/if}
             {:else}

@@ -160,33 +160,28 @@ export async function loginWithNsec(nsec: string): Promise<boolean> {
  * Login with NIP-46 Bunker
  */
 export async function loginWithBunker(bunkerUrl: string): Promise<boolean> {
-    try {
-        // Validate bunker URL format
-        if (!bunkerUrl.startsWith('bunker://')) {
-            throw new Error('Invalid bunker URL format');
-        }
-
-        // Create and set NIP-46 signer
-        const nip46Signer = new NDKNip46Signer(ndk, bunkerUrl);
-        logDebug('Created NIP-46 signer');
-        await nip46Signer.blockUntilReady();
-        ndk.signer = nip46Signer;
-        logDebug('Set NIP-46 signer');
-
-        // Update login state
-        const newState: LoginState = {
-            method: LoginMethod.BUNKER,
-            loggedIn: true,
-            data: { bunkerUrl }
-        };
-        loginState.set(newState);
-        saveLoginState(newState);
-
-        return true;
-    } catch (error) {
-        console.error('Error logging in with bunker:', error);
-        return false;
+    // Validate bunker URL format
+    if (!bunkerUrl.startsWith('bunker://')) {
+        throw new Error('Invalid bunker URL format');
     }
+
+    // Create and set NIP-46 signer
+    const nip46Signer = new NDKNip46Signer(ndk, bunkerUrl);
+    logDebug('Created NIP-46 signer');
+    await nip46Signer.blockUntilReady();
+    ndk.signer = nip46Signer;
+    logDebug('Set NIP-46 signer');
+
+    // Update login state
+    const newState: LoginState = {
+        method: LoginMethod.BUNKER,
+        loggedIn: true,
+        data: { bunkerUrl }
+    };
+    loginState.set(newState);
+    saveLoginState(newState);
+
+    return true;
 }
 
 /**
@@ -220,7 +215,7 @@ export async function generateNostrConnectUrl(): Promise<{ url: string, clientPu
 
         // Create the nostrconnect URL
         const relayParams = relays.map(relay => `relay=${encodeURIComponent(relay)}`).join('&');
-        const connectUrl = `nostrconnect://${clientPubkey}?${relayParams}&secret=${secret}&perms=sign_event&name=NostrFollowList`;
+        const connectUrl = `nostrconnect://${clientPubkey}?${relayParams}&secret=${secret}&perms=sign_event&name=FollowingNostr`;
 
         // Set the client keypair as our temporary signer
         ndk.signer = tempSigner;

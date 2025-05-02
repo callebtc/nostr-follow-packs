@@ -11,12 +11,15 @@ import {
 import { ndk } from '$lib/nostr/ndk';
 import { nip04, nip44 } from 'nostr-tools';
 import * as nostrTools from 'nostr-tools';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { FOLLOW_LIST_KIND } from '$lib/types/follow-list';
 
 // Login method types
 export enum LoginMethod {
     EXTENSION = 'extension',
     NSEC = 'nsec',
     BUNKER = 'bunker',
+    NOSTRCONNECT = 'nostrconnect',
     NONE = 'none'
 }
 
@@ -29,6 +32,11 @@ export interface LoginState {
     data?: {
         nsec?: string;
         bunkerUrl?: string;
+        nostrconnect?: {
+            relay: string;
+            localPrivateKey: string;
+            remotePubkey: string;
+        };
     };
 }
 
@@ -188,45 +196,32 @@ export async function loginWithBunker(bunkerUrl: string): Promise<boolean> {
 /**
  * Generate a nostrconnect URL
  */
-export async function generateNostrConnectUrl(): Promise<{ url: string, clientPubkey: string, secret: string, relayParams: string }> {
+export async function generateNostrConnectUrl(): Promise<{ url: string, clientPubkey: string, secret: string, relay: string, perms: string, localPrivateKey: string }> {
     try {
-        // Create a temporary signer for this connection
-        const tempSigner = new NDKNip07Signer();
-        await tempSigner.blockUntilReady();
-
-        // Get the client's public key
-        if (!tempSigner.user) {
-            throw new Error('Failed to get user object from signer');
-        }
-
-        const user = await tempSigner.user();
-        if (!user || !user.pubkey) {
-            throw new Error('Failed to get client public key');
-        }
-
-        const clientPubkey = user.pubkey;
+        // Create a temporary keypair for this connection - use the nostr-tools library directly
+        const localPrivateKeyBytes = nostrTools.generateSecretKey();
+        // Convert bytes to hex string for storage using the Noble utility directly
+        const localPrivateKey = bytesToHex(localPrivateKeyBytes);
+        const clientPubkey = nostrTools.getPublicKey(localPrivateKeyBytes);
 
         // Generate a random secret
         const secret = generateRandomString(8);
 
-        // Get relays we're using
-        const relays = ndk.explicitRelayUrls.length > 0
-            ? ndk.explicitRelayUrls
-            : ['wss://relay.nostr.band', 'wss://relay.damus.io'];
+        // // Get relays we're using - use only one relay for NostrConnect
+        // const relay = ndk.explicitRelayUrls.length > 0
+        //     ? ndk.explicitRelayUrls[0]
+        //     : 'wss://relay.nostr.band';
+        const relay = 'wss://relay.primal.net';
+
+        // Define permissions as an array to easily modify later
+        const permissions = [`sign_event:${FOLLOW_LIST_KIND}`, 'get_public_key'];
+        const permsStr = permissions.join(',');
+        const permsParamUriSafe = encodeURIComponent(permsStr);
 
         // Create the nostrconnect URL
-        const relayParamsUriSafe = relays.map(relay => `relay=${encodeURIComponent(relay)}`).join('&');
-        const relayParams = relays.map(relay => `relay=${relay}`).join('&');
-        // Define permissions as an array to easily modify later
-        const permissions = ['sign_event', 'get_public_key'];
-        const permsParam = `perms=${permissions.join(',')}`;
-        const permsParamUriSafe = encodeURIComponent(`${permissions.map(encodeURIComponent).join(',')}`);
-        const connectUrl = `nostrconnect://${clientPubkey}?${relayParamsUriSafe}&secret=${secret}&perms=${permsParamUriSafe}&name=FollowingNostr`;
+        const connectUrl = `nostrconnect://${clientPubkey}?relay=${encodeURIComponent(relay)}&secret=${secret}&perms=${permsParamUriSafe}&name=FollowingNostr`;
 
-        // Set the client keypair as our temporary signer
-        ndk.signer = tempSigner;
-
-        return { url: connectUrl, clientPubkey, secret, relayParams };
+        return { url: connectUrl, clientPubkey, secret, relay, perms: permsStr, localPrivateKey };
     } catch (error) {
         console.error('Error generating nostrconnect URL:', error);
         throw error;
@@ -234,9 +229,50 @@ export async function generateNostrConnectUrl(): Promise<{ url: string, clientPu
 }
 
 /**
+ * Login with NostrConnect
+ */
+export async function loginWithNostrConnect(relay: string, localPrivateKey: string, remotePubkey: string, perms: string): Promise<boolean> {
+    try {
+        // Create the options object with proper typing
+        const options = {
+            name: "FollowingNostr",
+            perms: perms
+        };
+
+        // Create and set NIP-46 signer using NostrConnect
+        const signer = NDKNip46Signer.nostrconnect(ndk, relay, localPrivateKey, options);
+
+        logDebug('Created NostrConnect signer');
+        await signer.blockUntilReady();
+        ndk.signer = signer;
+        logDebug('Set NostrConnect signer');
+
+        // Update login state
+        const newState: LoginState = {
+            method: LoginMethod.NOSTRCONNECT,
+            loggedIn: true,
+            data: {
+                nostrconnect: {
+                    relay,
+                    localPrivateKey,
+                    remotePubkey
+                }
+            }
+        };
+        loginState.set(newState);
+        saveLoginState(newState);
+
+        return true;
+    } catch (error) {
+        console.error('Error logging in with NostrConnect:', error);
+        return false;
+    }
+}
+
+/**
  * Listen for connection response from bunker
  */
-export function listenForNostrConnectResponse(clientPubkey: string, secret: string): Promise<string> {
+export function listenForNostrConnectResponse(clientPubkey: string, secret: string, localPrivateKey: string): Promise<string> {
     return new Promise((resolve, reject) => {
         try {
             // Update connection status
@@ -291,7 +327,9 @@ export function listenForNostrConnectResponse(clientPubkey: string, secret: stri
                     // Use NDK's built-in decryption as fallback
                     function fallbackDecrypt() {
                         // The event.decrypt() method returns a Promise<void> but updates the event's content
-                        event.decrypt()
+                        // create privatekey signer with the localPrivateKey
+                        const privateKeySigner = new NDKPrivateKeySigner(hexToBytes(localPrivateKey));
+                        event.decrypt(undefined, privateKeySigner)
                             .then(() => {
                                 // After decryption, check if we have content
                                 // NDK might update the event content directly
@@ -456,6 +494,15 @@ async function initializeSignerFromState(state: LoginState): Promise<boolean> {
             case LoginMethod.BUNKER:
                 if (state.data?.bunkerUrl) {
                     return await loginWithBunker(state.data.bunkerUrl);
+                }
+                break;
+
+            case LoginMethod.NOSTRCONNECT:
+                if (state.data?.nostrconnect) {
+                    const { relay, localPrivateKey, remotePubkey } = state.data.nostrconnect;
+                    // We need to reconstruct the perms
+                    const perms = `sign_event:${FOLLOW_LIST_KIND},get_public_key`;
+                    return await loginWithNostrConnect(relay, localPrivateKey, remotePubkey, perms);
                 }
                 break;
 

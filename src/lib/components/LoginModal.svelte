@@ -4,6 +4,7 @@
     loginWithExtension, 
     loginWithNsec, 
     loginWithBunker,
+    loginWithNostrConnect,
     checkNip07Extension,
     generateNostrConnectUrl,
     listenForNostrConnectResponse,
@@ -31,6 +32,9 @@
   let qrCodeDataUrl = '';
   let clientPubkey = '';
   let secret = '';
+  let localPrivateKey = '';
+  let relay = '';
+  let perms = '';
   let copySuccess = false;
   
   // Subscribe to connection status changes
@@ -56,8 +60,8 @@
   async function generateQrCode(url: string) {
     try {
       qrCodeDataUrl = await QRCode.toDataURL(url, {
-        width: 240,
-        margin: 2,
+        width: 320,
+        margin: 3,
         color: {
           dark: '#000',
           light: '#fff'
@@ -76,13 +80,18 @@
       nostrConnectUrl = connectData.url;
       clientPubkey = connectData.clientPubkey;
       secret = connectData.secret;
-      relayParams = connectData.relayParams;
+      relay = connectData.relay;
+      perms = connectData.perms;
+      localPrivateKey = connectData.localPrivateKey;
+      
       // Start listening for the response
-      listenForNostrConnectResponse(clientPubkey, secret)
+      listenForNostrConnectResponse(clientPubkey, secret, localPrivateKey)
         .then(async (bunkerUrl) => {
-          // Login with the bunker URL
-          const fullBunkerUrl = `${bunkerUrl}?${relayParams}&secret=${secret}`;
-          const success = await loginWithBunker(fullBunkerUrl);
+          // The bunkerUrl is "bunker://remotePubkey"
+          const remotePubkey = bunkerUrl.replace('bunker://', '');
+          
+          // Use NostrConnect login method directly instead of bunker
+          const success = await loginWithNostrConnect(relay, localPrivateKey, remotePubkey, perms);
           if (success) {
             await loadUser();
             onLogin();

@@ -20,6 +20,7 @@
   let activeTab = 'extension';
   let nsec = '';
   let bunkerUrl = '';
+  let relayParams = '';
   let isLoading = false;
   let isNip07Available = false;
   let showManualBunkerInput = false;
@@ -75,12 +76,13 @@
       nostrConnectUrl = connectData.url;
       clientPubkey = connectData.clientPubkey;
       secret = connectData.secret;
-      
+      relayParams = connectData.relayParams;
       // Start listening for the response
       listenForNostrConnectResponse(clientPubkey, secret)
         .then(async (bunkerUrl) => {
           // Login with the bunker URL
-          const success = await loginWithBunker(bunkerUrl);
+          const fullBunkerUrl = `${bunkerUrl}?${relayParams}&secret=${secret}`;
+          const success = await loginWithBunker(fullBunkerUrl);
           if (success) {
             await loadUser();
             onLogin();

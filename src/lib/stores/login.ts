@@ -188,7 +188,7 @@ export async function loginWithBunker(bunkerUrl: string): Promise<boolean> {
 /**
  * Generate a nostrconnect URL
  */
-export async function generateNostrConnectUrl(): Promise<{ url: string, clientPubkey: string, secret: string }> {
+export async function generateNostrConnectUrl(): Promise<{ url: string, clientPubkey: string, secret: string, relayParams: string }> {
     try {
         // Create a temporary signer for this connection
         const tempSigner = new NDKNip07Signer();
@@ -215,13 +215,18 @@ export async function generateNostrConnectUrl(): Promise<{ url: string, clientPu
             : ['wss://relay.nostr.band', 'wss://relay.damus.io'];
 
         // Create the nostrconnect URL
-        const relayParams = relays.map(relay => `relay=${encodeURIComponent(relay)}`).join('&');
-        const connectUrl = `nostrconnect://${clientPubkey}?${relayParams}&secret=${secret}&perms=sign_event&name=FollowingNostr`;
+        const relayParamsUriSafe = relays.map(relay => `relay=${encodeURIComponent(relay)}`).join('&');
+        const relayParams = relays.map(relay => `relay=${relay}`).join('&');
+        // Define permissions as an array to easily modify later
+        const permissions = ['sign_event', 'get_public_key'];
+        const permsParam = `perms=${permissions.join(',')}`;
+        const permsParamUriSafe = encodeURIComponent(`${permissions.map(encodeURIComponent).join(',')}`);
+        const connectUrl = `nostrconnect://${clientPubkey}?${relayParamsUriSafe}&secret=${secret}&perms=${permsParamUriSafe}&name=FollowingNostr`;
 
         // Set the client keypair as our temporary signer
         ndk.signer = tempSigner;
 
-        return { url: connectUrl, clientPubkey, secret };
+        return { url: connectUrl, clientPubkey, secret, relayParams };
     } catch (error) {
         console.error('Error generating nostrconnect URL:', error);
         throw error;

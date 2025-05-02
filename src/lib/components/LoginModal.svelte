@@ -6,8 +6,7 @@
     loginWithBunker,
     loginWithNostrConnect,
     checkNip07Extension,
-    generateNostrConnectUrl,
-    listenForNostrConnectResponse,
+    createNostrConnectSigner,
     cancelNostrConnectAttempt,
     connectStatus
   } from '$lib/stores/login';
@@ -75,35 +74,51 @@
   async function startNostrConnect() {
     try {
       isLoading = true;
-      // Generate the nostrconnect URL
-      const connectData = await generateNostrConnectUrl();
-      nostrConnectUrl = connectData.url;
-      clientPubkey = connectData.clientPubkey;
-      secret = connectData.secret;
-      relay = connectData.relay;
-      perms = connectData.perms;
-      localPrivateKey = connectData.localPrivateKey;
       
-      // Start listening for the response
-      listenForNostrConnectResponse(clientPubkey, secret, localPrivateKey)
-        .then(async (bunkerUrl) => {
-          // The bunkerUrl is "bunker://remotePubkey"
-          const remotePubkey = bunkerUrl.replace('bunker://', '');
-          
-          // Use NostrConnect login method directly instead of bunker
-          const success = await loginWithNostrConnect(relay, localPrivateKey, remotePubkey, perms);
-          if (success) {
-            await loadUser();
-            onLogin();
-            onClose();
-          }
-        })
-        .catch((error) => {
-          console.error('NostrConnect error:', error);
-          isLoading = false;
-        });
+      // Update connection status to waiting
+      connectStatus.set({
+        status: 'waiting',
+        message: 'Waiting for bunker to connect...',
+      });
+      
+      const result = await createNostrConnectSigner();
+      if (!result.signer.nostrConnectUri) {
+        throw new Error('Failed to create NostrConnect signer');
+      }
+      
+      console.log('NostrConnect signer created', result.signer.nostrConnectUri);
+      nostrConnectUrl = result.signer.nostrConnectUri;
+      
+      // Set up a timeout for 2 minutes (120000ms)
+      const timeoutPromise = new Promise<boolean>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Connection timeout. Please try again.'));
+        }, 120000);
+      });
+      
+      // Create a login promise
+      const loginPromise = loginWithNostrConnect(result.localPrivateKey, result.relay, result.perms);
+      
+      // Race the login against the timeout
+      const success = await Promise.race([loginPromise, timeoutPromise]);
+      
+      if (success) {
+        // If login successful, load user and close modal
+        await loadUser();
+        onLogin();
+        onClose();
+      } else {
+        throw new Error('Failed to login with NostrConnect');
+      }
     } catch (error) {
       console.error('Error starting NostrConnect:', error);
+      
+      // Update connection status to error
+      connectStatus.set({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to connect'
+      });
+      
       isLoading = false;
     }
   }

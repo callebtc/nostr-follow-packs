@@ -81,13 +81,13 @@
         message: 'Waiting for bunker to connect...',
       });
       
-      const result = await createNostrConnectSigner();
-      if (!result.signer.nostrConnectUri) {
+      const signer = await createNostrConnectSigner();
+      if (!signer || !signer.nostrConnectUri) {
         throw new Error('Failed to create NostrConnect signer');
       }
       
-      console.log('NostrConnect signer created', result.signer.nostrConnectUri);
-      nostrConnectUrl = result.signer.nostrConnectUri;
+      console.log('NostrConnect signer created', signer.nostrConnectUri);
+      nostrConnectUrl = signer.nostrConnectUri;
       
       // Set up a timeout for 2 minutes (120000ms)
       const timeoutPromise = new Promise<boolean>((_, reject) => {
@@ -97,13 +97,14 @@
       });
       
       // Create a login promise
-      const loginPromise = loginWithNostrConnect(result.localPrivateKey, result.relay, result.perms);
+      const loginPromise = signer.blockUntilReady(); 
       
       // Race the login against the timeout
       const success = await Promise.race([loginPromise, timeoutPromise]);
       
       if (success) {
         // If login successful, load user and close modal
+        await loginWithNostrConnect(signer);
         await loadUser();
         onLogin();
         onClose();

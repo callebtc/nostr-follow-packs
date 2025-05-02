@@ -33,9 +33,7 @@ export interface LoginState {
         nsec?: string;
         bunkerUrl?: string;
         nostrconnect?: {
-            relay: string;
-            localPrivateKey: string;
-            perms: string;
+            signer?: string;
         };
     };
 }
@@ -229,51 +227,47 @@ export async function loginWithBunker(bunkerUrl: string): Promise<boolean> {
 // }
 
 
-export async function createNostrConnectSigner(localPrivateKey?: string, relay?: string, perms?: string): Promise<{ signer: NDKNip46Signer, localPrivateKey: string, relay: string, perms: string }> {
-    if (!localPrivateKey) {
-        const localPrivateKeyBytes = nostrTools.generateSecretKey();
-        localPrivateKey = bytesToHex(localPrivateKeyBytes);
-    }
-    if (!relay) {
-        relay = 'wss://relay.primal.net';
-    }
-    if (!perms) {
-        perms = `sign_event:${FOLLOW_LIST_KIND},get_public_key`;
-    }
+export async function createNostrConnectSigner(): Promise<NDKNip46Signer> {
+
+    const localPrivateKeyBytes = nostrTools.generateSecretKey();
+    const localPrivateKey = bytesToHex(localPrivateKeyBytes);
+
+
+    const relay = 'wss://relay.primal.net';
+
+
+    const perms = `sign_event:${FOLLOW_LIST_KIND},get_public_key`;
     const ndkPrivateKeySigner = new NDKPrivateKeySigner(hexToBytes(localPrivateKey));
     const signer = NDKNip46Signer.nostrconnect(ndk, relay, ndkPrivateKeySigner, {
         name: "FollowingNostr",
         perms: perms
     });
-    return { signer, localPrivateKey, relay, perms };
+    return signer;
 }
 
 /**
  * Login with NostrConnect
  */
-export async function loginWithNostrConnect(localPrivateKey?: string, relay?: string, perms?: string): Promise<boolean> {
+export async function loginWithNostrConnect(signer: NDKNip46Signer): Promise<boolean> {
     try {
-        const result = await createNostrConnectSigner(localPrivateKey, relay, perms);
-
-        localPrivateKey = result.localPrivateKey;
-        relay = result.relay;
-        perms = result.perms;
-
-        // Create the options object with proper typing
-        logDebug('Created NostrConnect signer');
-        await result.signer.blockUntilReady();
-        ndk.signer = result.signer;
+        ndk.signer = signer;
         logDebug('Set NostrConnect signer');
 
-        // Update login state
+        // ugly hack: get current serialized signer and use that as the signer payload
+        let signerPayload = '';
+        const currentLoginState = get(loginState);
+        if (currentLoginState.loggedIn && currentLoginState.data?.nostrconnect && currentLoginState.data.nostrconnect.signer) {
+            signerPayload = currentLoginState.data.nostrconnect.signer;
+        } else {
+            signerPayload = signer.toPayload();
+        }
+
         const newState: LoginState = {
             method: LoginMethod.NOSTRCONNECT,
             loggedIn: true,
             data: {
                 nostrconnect: {
-                    relay,
-                    localPrivateKey,
-                    perms
+                    signer: signerPayload
                 }
             }
         };
@@ -517,8 +511,11 @@ async function initializeSignerFromState(state: LoginState): Promise<boolean> {
 
             case LoginMethod.NOSTRCONNECT:
                 if (state.data?.nostrconnect) {
-                    const { relay, localPrivateKey, perms } = state.data.nostrconnect;
-                    return await loginWithNostrConnect(relay, localPrivateKey, perms);
+                    const { signer } = state.data.nostrconnect;
+                    if (signer) {
+                        const signerObject = await NDKNip46Signer.fromPayload(signer, ndk);
+                        return await loginWithNostrConnect(signerObject);
+                    }
                 }
                 break;
 

@@ -36,19 +36,13 @@ export async function logoutUser(redirectToHome = true): Promise<void> {
 
     // Clear all user-related data from localStorage
     if (browser) {
-        // Clear main user data
-        localStorage.removeItem(USER_CACHE_KEY);
-        localStorage.removeItem(FOLLOW_SNAPSHOTS_KEY);
-
-        // Clean up profile caches (all keys that start with the profile prefix)
-        const profileKeys = Object.keys(localStorage).filter(key =>
-            key.startsWith(PROFILE_CACHE_PREFIX)
-        );
-        profileKeys.forEach(key => localStorage.removeItem(key));
+        // nuke all local storage keys
+        localStorage.clear();
     }
 
     // Redirect to home page if requested
     if (redirectToHome) {
         await goto('/');
+        window.location.reload();
     }
 } 

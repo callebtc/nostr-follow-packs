@@ -191,42 +191,6 @@ export async function loginWithBunker(bunkerUrl: string): Promise<boolean> {
     return true;
 }
 
-// /**
-//  * Generate a nostrconnect URL
-//  */
-// export async function generateNostrConnectUrl(): Promise<{ url: string, clientPubkey: string, secret: string, relay: string, perms: string, localPrivateKey: string }> {
-//     try {
-//         // Create a temporary keypair for this connection - use the nostr-tools library directly
-//         const localPrivateKeyBytes = nostrTools.generateSecretKey();
-//         // Convert bytes to hex string for storage using the Noble utility directly
-//         const localPrivateKey = bytesToHex(localPrivateKeyBytes);
-//         const clientPubkey = nostrTools.getPublicKey(localPrivateKeyBytes);
-
-//         // Generate a random secret
-//         const secret = generateRandomString(8);
-
-//         // // Get relays we're using - use only one relay for NostrConnect
-//         // const relay = ndk.explicitRelayUrls.length > 0
-//         //     ? ndk.explicitRelayUrls[0]
-//         //     : 'wss://relay.nostr.band';
-//         const relay = 'wss://relay.primal.net';
-
-//         // Define permissions as an array to easily modify later
-//         const permissions = [`sign_event:${FOLLOW_LIST_KIND}`, 'get_public_key'];
-//         const permsStr = permissions.join(',');
-//         const permsParamUriSafe = encodeURIComponent(permsStr);
-
-//         // Create the nostrconnect URL
-//         const connectUrl = `nostrconnect://${clientPubkey}?relay=${encodeURIComponent(relay)}&secret=${secret}&perms=${permsParamUriSafe}&name=FollowingNostr`;
-
-//         return { url: connectUrl, clientPubkey, secret, relay, perms: permsStr, localPrivateKey };
-//     } catch (error) {
-//         console.error('Error generating nostrconnect URL:', error);
-//         throw error;
-//     }
-// }
-
-
 export async function createNostrConnectSigner(): Promise<NDKNip46Signer> {
 
     const localPrivateKeyBytes = nostrTools.generateSecretKey();
@@ -239,7 +203,7 @@ export async function createNostrConnectSigner(): Promise<NDKNip46Signer> {
     const perms = `sign_event:${FOLLOW_LIST_KIND},get_public_key`;
     const ndkPrivateKeySigner = new NDKPrivateKeySigner(hexToBytes(localPrivateKey));
     const signer = NDKNip46Signer.nostrconnect(ndk, relay, ndkPrivateKeySigner, {
-        name: "FollowingNostr",
+        name: "following.space",
         perms: perms
     });
     return signer;
@@ -250,6 +214,7 @@ export async function createNostrConnectSigner(): Promise<NDKNip46Signer> {
  */
 export async function loginWithNostrConnect(signer: NDKNip46Signer): Promise<boolean> {
     try {
+        await signer.blockUntilReady();
         ndk.signer = signer;
         logDebug('Set NostrConnect signer');
 
@@ -281,146 +246,6 @@ export async function loginWithNostrConnect(signer: NDKNip46Signer): Promise<boo
     }
 }
 
-// /**
-//  * Listen for connection response from bunker
-//  */
-// export function listenForNostrConnectResponse(clientPubkey: string, secret: string, localPrivateKey: string): Promise<string> {
-//     return new Promise((resolve, reject) => {
-//         try {
-//             // Update connection status
-//             connectStatus.set({
-//                 status: 'waiting',
-//                 message: 'Waiting for bunker to connect...',
-//                 clientPubkey,
-//                 secret
-//             });
-
-//             // Subscribe to kind 24133 events addressed to our client pubkey
-//             const filter = {
-//                 kinds: [NIP46_REQUEST_KIND],
-//                 '#p': [clientPubkey]
-//             };
-
-//             const sub = ndk.subscribe(filter);
-
-//             // Update our connectStatus with the subscription
-//             connectStatus.update(status => {
-//                 return { ...status, subscription: sub };
-//             });
-
-//             sub.on('event', (event: NDKEvent) => {
-//                 try {
-//                     logDebug('Received potential connect response:', event);
-
-//                     // Only process events from the remote signer
-//                     const remotePubkey = event.pubkey;
-
-//                     // For NIP-07, we need to delegate decryption to the extension
-//                     if (typeof window !== 'undefined' && (window as any).nostr && ndk.signer instanceof NDKNip07Signer) {
-//                         const nostrObj = (window as any).nostr;
-
-//                         // Use the browser extension to decrypt
-//                         nostrObj.nip04.decrypt(remotePubkey, event.content)
-//                             .then((decryptedContent: string) => {
-//                                 processDecryptedContent(decryptedContent);
-//                             })
-//                             .catch((error: any) => {
-//                                 const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-//                                 logDebug('Failed to decrypt with extension:', errorMsg);
-
-//                                 // Fall back to NDK's decrypt
-//                                 fallbackDecrypt();
-//                             });
-//                     } else {
-//                         // Use NDK's built-in decrypt for non-NIP-07 signers
-//                         fallbackDecrypt();
-//                     }
-
-//                     // Use NDK's built-in decryption as fallback
-//                     function fallbackDecrypt() {
-//                         // The event.decrypt() method returns a Promise<void> but updates the event's content
-//                         // create privatekey signer with the localPrivateKey
-//                         const privateKeySigner = new NDKPrivateKeySigner(hexToBytes(localPrivateKey));
-//                         event.decrypt(undefined, privateKeySigner)
-//                             .then(() => {
-//                                 // After decryption, check if we have content
-//                                 // NDK might update the event content directly
-//                                 if (event.content) {
-//                                     try {
-//                                         // Attempt to parse the content as JSON directly
-//                                         processDecryptedContent(event.content);
-//                                     } catch (e) {
-//                                         logDebug('Content is not valid JSON after decrypt');
-//                                     }
-//                                 } else {
-//                                     logDebug('No decrypted content available');
-//                                 }
-//                             })
-//                             .catch(error => {
-//                                 const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-//                                 logDebug('Failed to decrypt with NDK:', errorMsg);
-//                             });
-//                     }
-
-//                     // Process the decrypted content
-//                     function processDecryptedContent(content: string) {
-//                         try {
-//                             const response = JSON.parse(content);
-//                             logDebug('Decrypted response:', response);
-
-//                             // Check if this is a proper response with the correct secret
-//                             if (response.result === secret) {
-//                                 logDebug('Connection established with bunker:', remotePubkey);
-
-//                                 // Close the subscription
-//                                 sub.stop();
-
-//                                 // Update connection status
-//                                 connectStatus.set({
-//                                     status: 'connected',
-//                                     message: 'Connected to bunker!'
-//                                 });
-
-//                                 // Create the bunker URL with the remote signer pubkey
-//                                 const bunkerUrl = `bunker://${remotePubkey}`;
-
-//                                 // Resolve with the bunker URL
-//                                 resolve(bunkerUrl);
-//                             }
-//                         } catch (parseError) {
-//                             const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown error';
-//                             logDebug('Failed to parse response:', errorMsg);
-//                         }
-//                     }
-//                 } catch (error) {
-//                     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-//                     console.error('Error processing connect response:', errorMsg);
-//                 }
-//             });
-
-//             // Set a timeout to cancel the connection attempt after 2 minutes
-//             setTimeout(() => {
-//                 if (get(connectStatus).status === 'waiting') {
-//                     sub.stop();
-//                     connectStatus.set({
-//                         status: 'error',
-//                         message: 'Connection timeout. Please try again.'
-//                     });
-//                     reject(new Error('Connection timeout'));
-//                 }
-//             }, 120000); // 2 minutes
-
-//         } catch (error) {
-//             const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-//             console.error('Error setting up nostrconnect listener:', errorMsg);
-//             connectStatus.set({
-//                 status: 'error',
-//                 message: errorMsg || 'Failed to set up connection'
-//             });
-//             reject(error);
-//         }
-//     });
-// }
 
 /**
  * Cancel an active nostrconnect connection attempt

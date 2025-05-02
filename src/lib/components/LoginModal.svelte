@@ -97,14 +97,13 @@
       });
       
       // Create a login promise
-      const loginPromise = signer.blockUntilReady(); 
+      const loginPromise = loginWithNostrConnect(signer);
       
       // Race the login against the timeout
       const success = await Promise.race([loginPromise, timeoutPromise]);
       
       if (success) {
         // If login successful, load user and close modal
-        await loginWithNostrConnect(signer);
         await loadUser();
         onLogin();
         onClose();

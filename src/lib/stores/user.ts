@@ -328,13 +328,12 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
 
 async function cleanUpProfilesFromLocalStorage() {
     if (!browser) return;
-
     const now = Date.now();
-    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const oneDay = 24 * 60 * 60 * 1000;
     const cacheKeys = Object.keys(localStorage).filter(key => key.startsWith(PROFILE_CACHE_PREFIX));
     for (const key of cacheKeys) {
         const { timestamp } = JSON.parse(localStorage.getItem(key) || '{}');
-        if (now - timestamp > sevenDays) {
+        if (now - timestamp > oneDay) {
             localStorage.removeItem(key);
         }
     }

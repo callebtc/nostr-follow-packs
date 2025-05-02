@@ -10,16 +10,19 @@ const logDebug = (...args: any[]) => {
     if (DEBUG) console.log('[Auth Service]', ...args);
 };
 
+let initializingAuth = false;
+
 /**
  * Initialize authentication by restoring login state and loading user
  * This is the primary function to call when the app starts or when a page loads directly
  */
 export async function initializeAuth(): Promise<boolean> {
-    if (!browser) return false;
+    if (!browser || initializingAuth) return false;
 
     logDebug('Initializing auth');
 
     try {
+        initializingAuth = true;
         // Check if we're already logged in and have user data
         if (get(loginState).loggedIn && get(user)?.pubkey) {
             logDebug('Already authenticated');
@@ -49,6 +52,8 @@ export async function initializeAuth(): Promise<boolean> {
     } catch (error) {
         console.error('Error initializing auth:', error);
         return false;
+    } finally {
+        initializingAuth = false;
     }
 }
 

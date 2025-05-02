@@ -20,7 +20,6 @@
   let activeTab = 'extension';
   let nsec = '';
   let bunkerUrl = '';
-  let relayParams = '';
   let isLoading = false;
   let isNip07Available = false;
   let showManualBunkerInput = false;
@@ -29,16 +28,19 @@
   // NostrConnect state
   let nostrConnectUrl = '';
   let qrCodeDataUrl = '';
-  let clientPubkey = '';
-  let secret = '';
-  let localPrivateKey = '';
-  let relay = '';
-  let perms = '';
   let copySuccess = false;
   
   // Subscribe to connection status changes
   $: connectionStatus = $connectStatus.status;
   $: connectionMessage = $connectStatus.message || '';
+  
+  // Validate nsec
+  $: isValidNsec = validateNsec(nsec);
+  
+  function validateNsec(nsecString: string): boolean {
+    // Basic validation: must start with nsec1 and be at least 6 chars
+    return nsecString.trim().startsWith('nsec1') && nsecString.trim().length >= 6;
+  }
 
   // Check if NIP-07 extension is available
   onMount(async () => {
@@ -68,6 +70,19 @@
       });
     } catch (error) {
       console.error('Error generating QR code:', error);
+    }
+  }
+  
+  async function pasteFromClipboard(target: 'nsec' | 'bunker') {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (target === 'nsec') {
+        nsec = text;
+      } else {
+        bunkerUrl = text;
+      }
+    } catch (error) {
+      console.error('Failed to read clipboard:', error);
     }
   }
 
@@ -127,8 +142,6 @@
     cancelNostrConnectAttempt();
     nostrConnectUrl = '';
     qrCodeDataUrl = '';
-    clientPubkey = '';
-    secret = '';
     isLoading = false;
   }
 
@@ -231,7 +244,7 @@
     <div class="px-6 pt-6 pb-0 relative">
       <h2 class="text-xl text-gray-800 dark:text-gray-300 font-semibold text-center">Log in</h2>
       <p class="text-center text-gray-600 dark:text-gray-400 mt-2">
-        Access your account securely with your preferred method
+        Log in with your Nostr account using your preferred method
       </p>
     </div>
 
@@ -290,22 +303,33 @@
               <label for="nsec" class="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Enter your nsec
               </label>
-              <input
-                id="nsec"
-                type="password"
-                bind:value={nsec}
-                class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="nsec1..."
-              />
+              <div class="relative">
+                <input
+                  id="nsec"
+                  type="password"
+                  bind:value={nsec}
+                  class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white pr-10"
+                  placeholder="nsec1..."
+                />
+                <button 
+                  class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  on:click={() => pasteFromClipboard('nsec')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                  </svg>
+                </button>
+              </div>
               <div class="text-xs text-red-500 dark:text-red-400">
                 Warning: This a dangerous login method. Never enter your nsec in an untrusted application.
                 Use an alternative login method if possible.
               </div>
               
               <button
-                class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 mt-4"
+                class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 on:click={handleNsecLogin}
-                disabled={isLoading || !nsec.trim()}
+                disabled={isLoading || !nsec.trim() || !isValidNsec}
               >
                 {isLoading ? 'Verifying...' : 'Login with Nsec'}
               </button>
@@ -344,13 +368,24 @@
                   <label for="bunkerUri" class="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Bunker URI
                   </label>
-                  <input
-                    id="bunkerUri"
-                    type="text"
-                    bind:value={bunkerUrl}
-                    class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="bunker://"
-                  />
+                  <div class="relative">
+                    <input
+                      id="bunkerUri"
+                      type="text"
+                      bind:value={bunkerUrl}
+                      class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white pr-10"
+                      placeholder="bunker://"
+                    />
+                    <button 
+                      class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                      on:click={() => pasteFromClipboard('bunker')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                      </svg>
+                    </button>
+                  </div>
                   {#if bunkerUrl && !bunkerUrl.startsWith('bunker://')}
                     <p class="text-red-500 text-xs">URI must start with bunker://</p>
                   {/if}
@@ -360,26 +395,22 @@
                     </p>
                   {/if}
 
-                  <div class="flex space-x-2 mt-3">
+                  <div class="flex space-x-2 mt-3 justify-center">
                     <button
-                      class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg dark:bg-blue-500 dark:hover:bg-blue-600"
+                      class="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md dark:bg-blue-500 dark:hover:bg-blue-600 flex-1"
                       on:click={handleBunkerLogin}
                       disabled={isLoading || !bunkerUrl.trim() || !bunkerUrl.startsWith('bunker://')}
                     >
-                      {isLoading ? 'Connecting...' : 'Connect with Bunker URL'}
+                      {isLoading ? 'Connecting...' : 'Connect'}
                     </button>
                     
                     <button
-                      class="py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg dark:bg-red-500 dark:hover:bg-red-600 flex items-center"
+                      class="py-2 px-3 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex-1"
                       on:click={toggleManualBunkerInput}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                      </svg>
+                      Cancel
                     </button>
                   </div>
-                  
-                  
                 </div>
               {/if}
             {:else}
@@ -397,7 +428,9 @@
                 {#if connectionStatus === 'waiting'}
                   {#if qrCodeDataUrl}
                     <div class="flex justify-center">
-                      <img src={qrCodeDataUrl} alt="Nostr Connect QR Code" class="rounded-lg border border-gray-300 dark:border-gray-600"/>
+                      <a href={nostrConnectUrl} target="_blank">
+                        <img loading="lazy" src={qrCodeDataUrl} alt="Nostr Connect QR Code" class="rounded-lg border border-gray-300 dark:border-gray-600"/>
+                      </a>
                     </div>
                     
                     <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">

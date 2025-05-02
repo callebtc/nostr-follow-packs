@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { loginState, initializeSigner } from '$lib/stores/login';
 import { loadUser, user } from '$lib/stores/user';
-import { get } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { goto } from '$app/navigation';
 
 // Debug logging
@@ -10,19 +10,19 @@ const logDebug = (...args: any[]) => {
     if (DEBUG) console.log('[Auth Service]', ...args);
 };
 
-let initializingAuth = false;
+export const initializingAuth = writable(false);
 
 /**
  * Initialize authentication by restoring login state and loading user
  * This is the primary function to call when the app starts or when a page loads directly
  */
 export async function initializeAuth(): Promise<boolean> {
-    if (!browser || initializingAuth) return false;
+    if (!browser || get(initializingAuth)) return false;
 
     logDebug('Initializing auth');
 
     try {
-        initializingAuth = true;
+        initializingAuth.set(true);
         // Check if we're already logged in and have user data
         if (get(loginState).loggedIn && get(user)?.pubkey) {
             logDebug('Already authenticated');
@@ -53,7 +53,7 @@ export async function initializeAuth(): Promise<boolean> {
         console.error('Error initializing auth:', error);
         return false;
     } finally {
-        initializingAuth = false;
+        initializingAuth.set(false);
     }
 }
 

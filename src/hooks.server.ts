@@ -8,6 +8,12 @@ import { getFollowListById } from '$lib/services/follow-list.service';
 import { ndk } from '$lib/nostr/ndk';
 import type { FollowList } from '$lib/types/follow-list';
 
+// Debug logging configuration
+const DEBUG = true;
+const logDebug = (...args: any[]) => {
+    if (DEBUG) console.log('[Server Hook]', ...args);
+};
+
 // Get the directory name for the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,7 +39,8 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessa
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-    console.log('handle event', event.request.url);
+    console.log(`[${event.getClientAddress()}] > `, event.request.url,);
+    // log IP address
     const url = new URL(event.request.url);
     const pathname = url.pathname;
 
@@ -50,6 +57,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         const isCrawler = /bot|facebook|twitter|slack|discord|telegram|linkedin|whatsapp|signal|Amethyst/i.test(userAgent);
         // TEST: always generate image
         if (isCrawler) {
+            logDebug('isCrawler', userAgent);
             try {
                 // Generate a cached image filename
                 const cacheFilename = `${listId}.png`;
@@ -65,13 +73,13 @@ export const handle: Handle = async ({ event, resolve }) => {
                     const stats = fs.statSync(cacheFollowListMetadataPath);
                     const fileAge = Date.now() - stats.mtimeMs;
                     metadataExists = fileAge < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-                    console.log('Metadata exists since:', new Date(stats.mtimeMs).toISOString());
+                    logDebug('Metadata exists since:', new Date(stats.mtimeMs).toISOString());
                 }
                 let followList: FollowList | null = null;
                 // test: fetch 
                 if (!metadataExists) {
                     // Fetch the follow list data
-                    console.log('[!metadataExists] Connecting to relays');
+                    logDebug('[!metadataExists] Connecting to relays');
                     try {
                         await withTimeout(
                             ndk.connect(),
@@ -107,12 +115,12 @@ export const handle: Handle = async ({ event, resolve }) => {
                     const stats = fs.statSync(cachePath);
                     const fileAge = Date.now() - stats.mtimeMs;
                     imageExists = fileAge < 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-                    console.log('Image exists since:', new Date(stats.mtimeMs).toISOString());
+                    logDebug('Image exists since:', new Date(stats.mtimeMs).toISOString());
                 }
                 if (!imageExists) {
                     // Generate the image if it doesn't exist or is too old
                     // Fetch the follow list data
-                    console.log('[!imageExists] Connecting to relays');
+                    logDebug('[!imageExists] Connecting to relays');
                     try {
                         await withTimeout(
                             ndk.connect(),
@@ -120,15 +128,15 @@ export const handle: Handle = async ({ event, resolve }) => {
                             'Connection to nostr relays timed out'
                         );
 
-                        console.log('[!imageExists] Follow list:', followList);
-                        console.log('[!imageExists] Generating image');
+                        logDebug('[!imageExists] Follow list:', followList);
+                        logDebug('[!imageExists] Generating image');
 
                         await withTimeout(
                             generatePreviewImage(followList, cachePath),
                             10000,
                             'Generating preview image timed out'
                         );
-                        console.log('[!imageExists] Image successfully generated');
+                        logDebug('[!imageExists] Image successfully generated');
                     } catch (error) {
                         console.error('Error generating preview image:', error);
                         // Fallback to default image or continue without image
@@ -167,7 +175,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                     headers: response.headers
                 });
             } catch (error) {
-                console.error('Error generating social media preview:', error);
+                logDebug('Error generating social media preview:', error);
                 // just resolve the request
                 return resolve(event);
             }

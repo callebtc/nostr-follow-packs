@@ -42,8 +42,8 @@ export async function getFollowLists(limit: number = LIST_LIMIT, since?: number,
             filter['#p'] = includingPubkeys;
         }
 
-        logDebug('Fetching with filter:', filter);
-        logDebug('Current relays', ndk.explicitRelayUrls.length, ndk.explicitRelayUrls);
+        // logDebug('Fetching with filter:', filter);
+        // logDebug('Current relays', ndk.explicitRelayUrls.length, ndk.explicitRelayUrls);
 
         const events = await ndk.fetchEvents(filter);
         const eventsArray = Array.from(events);
@@ -142,8 +142,8 @@ export async function getFollowListById(id: string, pubkey?: string): Promise<Fo
         if (pubkey) {
             filter.authors = [pubkey];
         }
-        logDebug('Fetching with filter:', filter);
-        logDebug('Current relays:', ndk.explicitRelayUrls);
+        // logDebug('Fetching with filter:', filter);
+        // logDebug('Current relays:', ndk.explicitRelayUrls);
 
         const events = await ndk.fetchEvents(filter);
         const eventsArray = Array.from(events);

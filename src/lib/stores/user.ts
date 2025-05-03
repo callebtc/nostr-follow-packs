@@ -277,9 +277,6 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
     try {
         const ndkUser = ndk.getUser({ pubkey });
         await ndkUser.fetchProfile();
-        logDebug('[getProfileByPubkey] Profile:', ndkUser.profile);
-        // relays:
-        logDebug('[getProfileByPubkey] Relays:', ndkUser.profile?.relays);
         const profile = {
             name: ndkUser.profile?.name || ndkUser.profile?.displayName,
             picture: ndkUser.profile?.picture as string || ndkUser.profile?.image as string,
@@ -288,10 +285,12 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
             nip05Verified: false
         };
 
+        logDebug('[getProfileByPubkey] Profile:', profile.name);
+
         // strip bio from all line breaks
         profile.bio = profile.bio?.replace(/\n/g, ' ');
 
-        logDebug(`[getProfileByPubkey] Profile for ${pubkey}:`, profile);
+        // logDebug(`[getProfileByPubkey] Profile for ${pubkey}:`, profile);
 
         // // check if the nip05 is verified
         // if (profile.nip05) {

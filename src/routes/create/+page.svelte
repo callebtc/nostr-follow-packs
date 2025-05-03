@@ -513,7 +513,7 @@
               {#if duplicateEntryError}
                 <span class="text-red-600">This user is already in your list!</span>
               {:else}
-                Search by username or paste a nostr npub/nprofile
+                Search by username or paste a nostr npub or nprofile
               {/if}
             </p>
             

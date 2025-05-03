@@ -191,15 +191,10 @@ export async function loginWithBunker(bunkerUrl: string): Promise<boolean> {
     return true;
 }
 
-export async function createNostrConnectSigner(): Promise<NDKNip46Signer> {
+export async function createNostrConnectSigner(relay: string): Promise<NDKNip46Signer> {
 
     const localPrivateKeyBytes = nostrTools.generateSecretKey();
     const localPrivateKey = bytesToHex(localPrivateKeyBytes);
-
-
-    const relay = 'wss://relay.primal.net';
-
-
     const perms = `sign_event:${FOLLOW_LIST_KIND},get_public_key`;
     const ndkPrivateKeySigner = new NDKPrivateKeySigner(hexToBytes(localPrivateKey));
     const signer = NDKNip46Signer.nostrconnect(ndk, relay, ndkPrivateKeySigner, {

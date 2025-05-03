@@ -24,11 +24,12 @@
   let isNip07Available = false;
   let showManualBunkerInput = false;
   let bunkerError = '';
-  
+  let nostrConnectRelay = 'wss://relay.primal.net';
   // NostrConnect state
   let nostrConnectUrl = '';
   let qrCodeDataUrl = '';
   let copySuccess = false;
+  let showRelayInput = false;
   
   // Subscribe to connection status changes
   $: connectionStatus = $connectStatus.status;
@@ -96,7 +97,7 @@
         message: 'Waiting for bunker to connect...',
       });
       
-      const signer = await createNostrConnectSigner();
+      const signer = await createNostrConnectSigner(nostrConnectRelay);
       if (!signer || !signer.nostrConnectUri) {
         throw new Error('Failed to create NostrConnect signer');
       }
@@ -437,6 +438,29 @@
                       {connectionMessage}
                     </div>
                     
+                    {#if showRelayInput}
+                      <div class="mt-2 mb-2 mx-4">
+                        <div class="flex space-x-2">
+                          <input
+                            type="text"
+                            bind:value={nostrConnectRelay}
+                            class="flex-1 text-xs p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            placeholder="wss://relay.example.com"
+                          />
+                          <button
+                            class="py-1 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded dark:bg-blue-500 dark:hover:bg-blue-600"
+                            on:click={() => {
+                              showRelayInput = false;
+                              cancelNostrConnect();
+                              startNostrConnect();
+                            }}
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </div>
+                    {/if}
+
                     <div class="flex space-x-2 justify-center">
                       <button
                         class="py-1 px-3 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
@@ -454,6 +478,16 @@
                           </svg>
                           Copy URL
                         {/if}
+                      </button>
+                      
+                      <button
+                        class="py-1 px-3 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                        on:click={() => showRelayInput = !showRelayInput}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                        </svg>
+                        Edit
                       </button>
                       
                       <button

@@ -55,7 +55,7 @@
 
 <button 
   on:click={copyEvent} 
-  class="inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors ml-2 w-[90px]"
+  class="inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors w-[90px]"
   title="Copy Nostr event link"
 >
   {#if copied}

@@ -270,12 +270,13 @@
               
             </div>
             <div class="flex ml-1 mt-2 items-center flex-wrap">
-              <span class="text-xs text-gray-500"><PublicKeyDisplay pubkey={followList.pubkey} />  · {getRelativeTime(followList.createdAt)} · {followList.entries.length} users</span>
-              <span class="text-xs text-gray-500">
-                <CopyEvent eventId={followList.eventId} pubkey={followList.pubkey} />
-              </span>
+              <span class="text-xs text-gray-500 pb-1"><PublicKeyDisplay pubkey={followList.pubkey} />  · {getRelativeTime(followList.createdAt)} · {followList.entries.length} users</span>
             </div>
-            
+            <div class="flex ml-1 mt-2 items-center flex-wrap">
+            <span class="text-xs text-gray-500 mb-1">
+              <CopyEvent eventId={followList.eventId} pubkey={followList.pubkey} />
+            </span>
+          </div>
         </div>
         
         <!-- button elements -->
@@ -292,7 +293,9 @@
               {followingAll ? 'Following...' : 'Follow All'}
             </button>
           {/if}
-          <a href="/" class="btn btn-secondary">Back Home</a>
+          <div class="hidden sm:block">
+            <a href="/" class="btn btn-secondary">Back Home</a>
+          </div>
         </div>
       </div>
     </div>

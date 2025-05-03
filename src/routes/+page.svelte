@@ -168,17 +168,18 @@
   onMount(async () => {
     initializeAuth(() => {
       if (followLists.length === 0) {
+        // Load filter preference from localStorage
+        if (typeof localStorage !== 'undefined') {
+          const savedFilter = localStorage.getItem('filterType');
+          if (savedFilter !== null) {
+            filterType = savedFilter as FilterType;
+          }
+        }
         loadAllFollowLists();
       }
     });
     try {
-      // Load filter preference from localStorage
-      if (typeof localStorage !== 'undefined') {
-        const savedFilter = localStorage.getItem('filterType');
-        if (savedFilter !== null) {
-          filterType = savedFilter as FilterType;
-        }
-      }
+      
       await loadAllFollowLists();
     } catch (error) {
       console.error('Error fetching follow lists:', error);

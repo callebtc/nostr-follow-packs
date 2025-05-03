@@ -163,7 +163,9 @@
 
   onMount(async () => {
     initializeAuth(() => {
-      loadAllFollowLists();
+      if (followLists.length === 0) {
+        loadAllFollowLists();
+      }
     });
     try {
       // Load filter preference from localStorage

@@ -16,7 +16,7 @@ export const initializingAuth = writable(false);
  * Initialize authentication by restoring login state and loading user
  * This is the primary function to call when the app starts or when a page loads directly
  */
-export async function initializeAuth(): Promise<boolean> {
+export async function initializeAuth(callback?: () => void): Promise<boolean> {
     if (!browser || get(initializingAuth)) return false;
 
     logDebug('Initializing auth');
@@ -48,6 +48,9 @@ export async function initializeAuth(): Promise<boolean> {
         }
 
         logDebug('Authentication successful:', loadedUser.pubkey);
+        if (callback) {
+            callback();
+        }
         return true;
     } catch (error) {
         console.error('Error initializing auth:', error);

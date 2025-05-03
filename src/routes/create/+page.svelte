@@ -3,10 +3,10 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { user } from '$lib/stores/user';
-  import { isValidNpub, npubToHex } from '$lib/utils/npub';
+  import { isValidNpub, npubToHex, isValidNprofile, nprofileToNpubAndRelays } from '$lib/utils/npub';
   import { publishFollowList, getFollowListById, deleteFollowList } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
-  import { searchUsers, type VertexSearchResult } from '$lib/services/vertex-search';
+  import { type UserSearchResult } from '$lib/services/user-search';
   import type { FollowListEntry } from '$lib/types/follow-list';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import ProfileImage from '$lib/components/ProfileImage.svelte';
@@ -21,10 +21,11 @@
   let description = '';
   let searchQuery = '';
   let searching = false;
-  let searchResults: VertexSearchResult[] = [];
+  let searchResults: UserSearchResult[] = [];
   let selectedEntries: FollowListEntry[] = [];
   let submitting = false;
   let error = '';
+  let duplicateEntryError = false;
   let editMode = false;
   let editId = '';
   let listId = '';
@@ -151,17 +152,61 @@
         // Get profile
         const profile = await getProfileByPubkey(pubkey);
         
+        if (selectedEntries.some(entry => entry.pubkey === pubkey)) {
+          logDebug('Entry already in list:', pubkey);
+          duplicateEntryError = true;
+          setTimeout(() => {
+            duplicateEntryError = false;
+          }, 3000);
+          searching = false;
+          return;
+        }
+
         // Create a single search result
         searchResults = [{
           pubkey,
+          relays: [],
           rank: 0,
           name: profile.name || 'Unknown',
           picture: profile.picture || '',
         }];
-      } else {
-        // TODO: Implement search by username
-        // Perform regular search
-        // searchResults = await searchUsers(searchQuery);
+      } else if (isValidNprofile(searchQuery)) {
+        // Convert nprofile to npub and relays
+        const { npub, relays } = await nprofileToNpubAndRelays(searchQuery);
+        if (!npub) {
+          error = 'Invalid nprofile';
+          return;
+        }
+
+        // Convert npub to hex
+        const pubkey = await npubToHex(npub);
+
+        if (!pubkey) {
+          error = 'Invalid npub';
+          return;
+        }
+        
+        // Get profile
+        const profile = await getProfileByPubkey(pubkey);
+        
+        if (selectedEntries.some(entry => entry.pubkey === pubkey)) {
+          logDebug('Entry already in list:', pubkey);
+          duplicateEntryError = true;
+          setTimeout(() => {
+            duplicateEntryError = false;
+          }, 3000);
+          searching = false;
+          return;
+        }
+
+        // Create a single search result
+        searchResults = [{
+          pubkey,
+          relays,
+          rank: 0,
+          name: profile.name || 'Unknown',
+          picture: profile.picture || '',
+        }];
       }
       
       logDebug(`Search returned ${searchResults.length} results`);
@@ -174,7 +219,7 @@
   }
   
   // Add a search result to the selected entries
-  function addEntry(result: VertexSearchResult) {
+  function addEntry(result: UserSearchResult) {
     // Check if already added
     if (selectedEntries.some(entry => entry.pubkey === result.pubkey)) {
       logDebug('Entry already in list:', result.pubkey);
@@ -188,6 +233,7 @@
       ...selectedEntries, 
       {
         pubkey: result.pubkey,
+        relay: result.relays[0] || '',
         name: result.name,
         picture: result.picture
       }
@@ -440,7 +486,7 @@
               <button
                 type="button"
                 on:click={handleSearch}
-                disabled={searching || searchQuery.length < 3 || !isValidNpub(searchQuery)}
+                disabled={searching || searchQuery.length < 3 || (!isValidNpub(searchQuery) && !isValidNprofile(searchQuery))}
                 class="px-4 py-2 bg-purple-600 text-white rounded-r-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
               >
                 {searching ? 'Searching...' : 'Add User'}
@@ -448,7 +494,11 @@
             </div>
             <p class="mt-1 text-xs text-gray-500">
               <!-- Search by username or paste a nostr npub (starting with npub1...) -->
-               Paste nostr npub to add users to your list
+               {#if duplicateEntryError}
+                <span class="text-red-600">This user is already in your list!</span>
+               {:else}
+                Paste nostr npub to add users to your list
+               {/if}
             </p>
             
             {#if error}
@@ -472,6 +522,11 @@
                       <div>
                         <h4 class="text-lg font-medium text-gray-900">{result.name || 'Unknown User'}</h4>
                         <PublicKeyDisplay pubkey={result.pubkey} />
+                        {#if result.relays.length > 0}
+                          <p class="text-xs text-gray-500">
+                            {result.relays.join(', ')}
+                          </p>
+                        {/if}
                       </div>
                     </div>
                     <button
@@ -556,6 +611,11 @@
                           </p>
                         {/if}
                         <PublicKeyDisplay pubkey={entry.pubkey} />
+                        {#if entry.relay}
+                          <p class="text-xs text-gray-500">
+                            {entry.relay}
+                          </p>
+                        {/if}
                       </div>
                     </div>
                     <div class="flex items-center space-x-2">

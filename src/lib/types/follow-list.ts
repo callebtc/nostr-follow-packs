@@ -2,10 +2,11 @@ import { ndk } from "$lib/nostr/ndk";
 import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 // The constant for our custom follow list event kind (replaceable)
-export const FOLLOW_LIST_KIND = 39089;
+export const FOLLOW_LIST_KIND = 39088;
 
 export interface FollowListEntry {
     pubkey: string;
+    relay?: string;
     name?: string;
     picture?: string;
     npub?: string;
@@ -70,6 +71,7 @@ export function parseFollowListEvent(event: NDKEvent): FollowList | null {
         if (pTags.length > 0 && entries.length === 0) {
             entries = pTags.map(tag => ({
                 pubkey: tag[1],
+                relay: tag[2] || '',
             }));
         }
 
@@ -108,7 +110,11 @@ export async function createFollowListEvent(followList: Omit<FollowList, 'eventI
 
     // Add each pubkey as a p tag for discoverability
     followList.entries.forEach(entry => {
-        event.tags.push(['p', entry.pubkey]);
+        if (entry.relay) {
+            event.tags.push(['p', entry.pubkey, entry.relay]);
+        } else {
+            event.tags.push(['p', entry.pubkey]);
+        }
     });
 
     // set the description as a "description" tag

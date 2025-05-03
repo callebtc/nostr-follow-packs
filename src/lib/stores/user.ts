@@ -248,7 +248,7 @@ export async function loadUserProfile() {
 /**
  * Get profile data for a given public key
  */
-export async function getProfileByPubkey(pubkey: string): Promise<{ name?: string, picture?: string, bio?: string, nip05?: string, nip05Verified?: boolean }> {
+export async function getProfileByPubkey(pubkey: string): Promise<{ name?: string, picture?: string, bio?: string, nip05?: string, nip05Verified?: boolean, relays?: string[] }> {
     // Check local cache first
     const cacheKey = PROFILE_CACHE_PREFIX + pubkey;
     let cachedProfile = null;
@@ -277,7 +277,9 @@ export async function getProfileByPubkey(pubkey: string): Promise<{ name?: strin
     try {
         const ndkUser = ndk.getUser({ pubkey });
         await ndkUser.fetchProfile();
-
+        logDebug('[getProfileByPubkey] Profile:', ndkUser.profile);
+        // relays:
+        logDebug('[getProfileByPubkey] Relays:', ndkUser.profile?.relays);
         const profile = {
             name: ndkUser.profile?.name || ndkUser.profile?.displayName,
             picture: ndkUser.profile?.picture as string || ndkUser.profile?.image as string,

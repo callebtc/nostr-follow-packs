@@ -281,9 +281,6 @@
         
         <!-- button elements -->
         <div class="flex flex-wrap w-full sm:w-auto justify-end gap-2">
-          {#if isAuthor()}
-            <button on:click={handleEdit} class="btn btn-primary">Edit List</button>
-          {/if}
           {#if $user}
             <button 
               on:click={handleFollowAll} 
@@ -293,9 +290,9 @@
               {followingAll ? 'Following...' : 'Follow All'}
             </button>
           {/if}
-          <div class="hidden sm:block">
-            <a href="/" class="btn btn-secondary">Back Home</a>
-          </div>
+          {#if isAuthor()}
+            <button on:click={handleEdit} class="btn btn-secondary">Edit List</button>
+          {/if}
         </div>
       </div>
     </div>

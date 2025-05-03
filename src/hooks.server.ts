@@ -135,7 +135,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                             10000,
                             'Generating preview image timed out'
                         );
-                        logDebug('[!imageExists] Image successfully generated');
+                        logDebug('[!imageExists] ✅ Image successfully generated');
                     } catch (error) {
                         console.error('Error generating preview image:', error);
                         // Fallback to default image or continue without image

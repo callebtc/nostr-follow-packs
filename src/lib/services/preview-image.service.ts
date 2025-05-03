@@ -81,7 +81,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
         const profileImages: Image[] = [];
         const profilesWithPictures = [];
         for (const profile of followList.entries) {
-            console.log('[generatePreviewImage] Loading profile image for', profile.pubkey);
+            console.log('[generatePreviewImage] 🌅 Loading profile image for', profile.pubkey);
             const profileWithPicture = await getProfileByPubkey(profile.pubkey);
             if (profileWithPicture.picture) {
                 try {

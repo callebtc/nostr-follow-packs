@@ -118,51 +118,37 @@
               No snapshots available yet. Snapshots are saved automatically when you follow users.
             </div>
           {:else}
-            <div class="overflow-hidden border border-gray-200 rounded-md">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Following
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  {#each snapshots as snapshot}
-                    <tr>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(snapshot.timestamp)}
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {snapshot.count} users
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div class="flex justify-end space-x-2">
-                          <button 
-                            on:click={() => exportSnapshot(snapshot)}
-                            class="text-purple-600 hover:text-purple-900"
-                          >
-                            Export
-                          </button>
-                          <button 
-                            on:click={() => handleRestore(snapshot)}
-                            disabled={restoring}
-                            class="text-indigo-600 hover:text-indigo-900 {restoring && restoringId === snapshot.eventId ? 'opacity-50' : ''}"
-                          >
-                            {restoring && restoringId === snapshot.eventId ? 'Restoring...' : 'Restore'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
+            <div class="grid gap-4">
+              {#each snapshots as snapshot}
+                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                    <div class="mb-3 sm:mb-0">
+                      <div class="text-sm font-medium text-gray-600">Date</div>
+                      <div class="text-gray-900">{formatDate(snapshot.timestamp)}</div>
+                    </div>
+                    <div class="mb-3 sm:mb-0">
+                      <div class="text-sm font-medium text-gray-600">Following</div>
+                      <div class="text-gray-900">{snapshot.count} users</div>
+                    </div>
+                    <div class="flex space-x-3 mt-3 sm:mt-0">
+                      <button 
+                        on:click={() => exportSnapshot(snapshot)}
+                        class="px-3 py-1.5 text-sm rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100 transition-colors"
+                      >
+                        Export
+                      </button>
+                      <button 
+                        on:click={() => handleRestore(snapshot)}
+                        disabled={restoring}
+                        class="px-3 py-1.5 text-sm rounded-md bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors 
+                          {restoring && restoringId === snapshot.eventId ? 'opacity-50' : ''}"
+                      >
+                        {restoring && restoringId === snapshot.eventId ? 'Restoring...' : 'Restore'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              {/each}
             </div>
             
             <p class="mt-4 text-sm text-gray-500">

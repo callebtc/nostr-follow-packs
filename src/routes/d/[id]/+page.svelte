@@ -9,7 +9,7 @@
   import PostTimeline from '$lib/components/PostTimeline.svelte';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
-  import { hexToNpub } from '$lib/services/vertex-search';
+  import { hexToNpub } from '$lib/utils/npub';
   import CopyEvent from '$lib/components/CopyEvent.svelte';
   import { initOptionalAuth } from '$lib/services/auth';
   import ProfileImage from '$lib/components/ProfileImage.svelte';

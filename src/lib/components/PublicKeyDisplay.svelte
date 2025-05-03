@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { hexToNpub } from '$lib/services/vertex-search';
+  import { hexToNpub } from '$lib/utils/npub';
   import { onMount } from 'svelte';
 
   export let pubkey: string;

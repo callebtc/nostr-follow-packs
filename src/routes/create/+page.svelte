@@ -3,14 +3,13 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { user } from '$lib/stores/user';
-  import { isValidNpub } from '$lib/services/vertex-search';
+  import { isValidNpub, npubToHex } from '$lib/utils/npub';
   import { publishFollowList, getFollowListById, deleteFollowList } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
-  import type { VertexSearchResult } from '$lib/services/vertex-search';
+  import { searchUsers, type VertexSearchResult } from '$lib/services/vertex-search';
   import type { FollowListEntry } from '$lib/types/follow-list';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import ProfileImage from '$lib/components/ProfileImage.svelte';
-  // Debug logging
   const DEBUG = true;
   const logDebug = (...args: any[]) => {
     if (DEBUG) console.log('[Create Page]', ...args);

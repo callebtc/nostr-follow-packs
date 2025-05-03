@@ -5,7 +5,7 @@
   import type { FollowListEntry } from '$lib/types/follow-list';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
-  import { hexToNpub } from '$lib/services/vertex-search';
+  import { hexToNpub } from '$lib/utils/npub';
   import ProfileImage from '$lib/components/ProfileImage.svelte';
   export let pubkeys: string[] = [];
   export let entries: FollowListEntry[] = [];

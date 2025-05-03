@@ -67,7 +67,7 @@ export async function searchUsers(query: string): Promise<VertexSearchResult[]> 
 
         // Try to publish specifically to the Vertex relay
         try {
-            const vertexRelay = Array.from(signerNdk.pool.relays.values()).find((relay: any) =>
+            const vertexRelay = Array.from(ndk.pool.relays.values()).find((relay: any) =>
                 relay.url === VERTEX_RELAY || relay.url.includes('vertexlab.io')
             );
 
@@ -102,7 +102,7 @@ export async function searchUsers(query: string): Promise<VertexSearchResult[]> 
         // Promise that resolves with events
         const fetchPromise = new Promise<NDKEvent[]>((resolve) => {
             const events: NDKEvent[] = [];
-            const subscription = signerNdk.subscribe(filter, { closeOnEose: true });
+            const subscription = ndk.subscribe(filter, { closeOnEose: true });
 
             subscription.on('event', (event: NDKEvent) => {
                 logDebug('Received event:', event.kind);
@@ -233,9 +233,7 @@ export async function searchUsers(query: string): Promise<VertexSearchResult[]> 
         logDebug('Search error:', error);
         return [];
     }
-}
-
-/**
+}/**
  * Check if a string looks like a nostr npub 
  */
 export function isValidNpub(input: string): boolean {
@@ -282,3 +280,4 @@ export async function hexToNpub(hex: string): Promise<string | null> {
         return null;
     }
 }
+

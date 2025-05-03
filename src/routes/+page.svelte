@@ -9,10 +9,11 @@
   import { getRelativeTime } from '$lib/utils/date';
   import ProfileImage from '$lib/components/ProfileImage.svelte';
   import { initializeAuth } from '$lib/services/auth';
-  type FilterType = "none" | "follows" | "included";
+  type FilterType = "none" | "follows" | "included" | "ours";
   const FILTER_NONE: FilterType = "none";
   const FILTER_USER_FOLLOWS: FilterType = "follows";
   const FILTER_USER_INCLUDED: FilterType = "included";
+  const FILTER_USER_OURS: FilterType = "ours";
 
   let followLists: FollowList[] = [];
   let loading = true;
@@ -25,7 +26,8 @@
   const filterOptions = [
     { value: FILTER_NONE, label: 'Show all packs' },
     { value: FILTER_USER_FOLLOWS, label: 'From users I follow' },
-    { value: FILTER_USER_INCLUDED, label: 'Packs I\'m in' }
+    { value: FILTER_USER_INCLUDED, label: 'Packs I\'m in' },
+    { value: FILTER_USER_OURS, label: 'My packs' }
   ];
 
   // Get the current filter label
@@ -62,7 +64,7 @@
       let lists: FollowList[] = [];
       
       // Handle cases that need the current user
-      if (filterType === FILTER_USER_FOLLOWS || filterType === FILTER_USER_INCLUDED) {
+      if (filterType !== FILTER_NONE) {
         // Get current user or load if needed
         let ourUser = get(user);
         if (!ourUser) await loadUser();
@@ -72,11 +74,13 @@
         if (filterType === FILTER_USER_FOLLOWS) {
           // Get lists from followed users and self
           const followsArray = ourUser.following ? Array.from(ourUser.following) : [];
-          followsArray.push(ourUser.pubkey);
           lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
-        } else {
+        } else if (filterType === FILTER_USER_INCLUDED) {
           // Get lists that include the current user
           lists = await getFollowLists(LIST_LIMIT, undefined, until, undefined, [ourUser.pubkey]);
+        } else if (filterType === FILTER_USER_OURS) {
+          // Get lists from the current user
+          lists = await getFollowLists(LIST_LIMIT, undefined, until, [ourUser.pubkey]);
         }
       } else {
         // No filter, get all lists

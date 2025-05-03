@@ -162,7 +162,9 @@
   }
 
   onMount(async () => {
-    initializeAuth();
+    initializeAuth(() => {
+      loadAllFollowLists();
+    });
     try {
       // Load filter preference from localStorage
       if (typeof localStorage !== 'undefined') {

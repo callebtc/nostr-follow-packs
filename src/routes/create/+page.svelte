@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { user } from '$lib/stores/user';
-  import { searchUsers, npubToHex, isValidNpub } from '$lib/services/vertex-search';
+  import { searchUsers, npubToHex, isValidNpub, hexToNpub } from '$lib/services/vertex-search';
   import { publishFollowList, getFollowListById, deleteFollowList } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
   import type { VertexSearchResult } from '$lib/services/vertex-search';
@@ -139,8 +139,10 @@
     
     searching = true;
     searchResults = [];
+    error = '';
     
     try {
+      // Check if input is a valid npub
       if (isValidNpub(searchQuery)) {
         // Convert npub to hex
         const pubkey = await npubToHex(searchQuery);
@@ -161,9 +163,67 @@
           picture: profile.picture || '',
         }];
       } else {
-        // TODO: Implement search by username
-        // Perform regular search
-        // searchResults = await searchUsers(searchQuery);
+        // Assume it's a NIP-05 domain
+        let domain = searchQuery.trim().toLowerCase();
+        domain = domain.replace(/^https?:\/\//, ''); // Remove http(s)://
+        domain = domain.split('/')[0]; // Remove any paths
+        
+        // Make request to .well-known/nostr.json with CORS handling
+        const response = await fetch(`https://${domain}/.well-known/nostr.json`, {
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json',
+            'Origin': window.location.origin
+          }
+        }).catch((err) => {
+          // Check if the error is a CORS error
+          if (err.message.includes('Failed to fetch') || err.message.includes('CORS')) {
+            throw new Error(`CORS Error: The domain ${domain} is blocking requests from this website. Send the domain owner https://github.com/nostr-protocol/nips/blob/master/05.md#allowing-access-from-javascript-apps.`);
+          }
+          throw err;
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('NIP-05 file not found. Make sure the domain supports NIP-05.');
+          } else if (response.status === 403) {
+            throw new Error('Access denied. The server is blocking requests to the NIP-05 file.');
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+        }
+        
+        const data = await response.json();
+        
+        if (!data.names) {
+          throw new Error('Invalid nostr.json format: missing names field');
+        }
+        
+        // Get all pubkeys from the names object and ensure they are strings
+        const pubkeys = Object.values(data.names).filter((key): key is string => typeof key === 'string');
+        
+        if (pubkeys.length === 0) {
+          throw new Error('No valid pubkeys found in the NIP-05 list');
+        }
+        
+        // Add each pubkey to the list
+        for (const pubkey of pubkeys) {
+          try {
+            const profile = await getProfileByPubkey(pubkey);
+            addEntry({
+              pubkey,
+              rank: 0,
+              name: profile.name || 'Unknown',
+              picture: profile.picture || '',
+            });
+          } catch (err) {
+            console.error(`Error processing pubkey ${pubkey}:`, err);
+          }
+        }
+        
+        // Clear the search field
+        searchQuery = '';
+        return;
       }
       
       logDebug(`Search returned ${searchResults.length} results`);
@@ -423,7 +483,7 @@
           <!-- Search field -->
           <div class="mb-4">
             <label for="search" class="block text-sm font-medium text-gray-700 mb-1">
-              Search for Nostr Users
+              Add Users to Follow Pack
             </label>
             <div class="flex">
               <input
@@ -431,7 +491,7 @@
                 id="search"
                 bind:value={searchQuery}
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Enter npub"
+                placeholder="Enter npub or NIP-05 domain (e.g. npub1... or bitcoinveterans.org)"
                 on:keydown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -442,15 +502,14 @@
               <button
                 type="button"
                 on:click={handleSearch}
-                disabled={searching || searchQuery.length < 3 || !isValidNpub(searchQuery)}
+                disabled={searching || !searchQuery.trim()}
                 class="px-4 py-2 bg-purple-600 text-white rounded-r-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
               >
-                {searching ? 'Searching...' : 'Add User'}
+                {searching ? 'Searching...' : 'Add'}
               </button>
             </div>
             <p class="mt-1 text-xs text-gray-500">
-              <!-- Search by username or paste a nostr npub (starting with npub1...) -->
-               Paste nostr npub to add users to your list
+              Enter a nostr npub or NIP-05 domain to add users to your list
             </p>
             
             {#if error}

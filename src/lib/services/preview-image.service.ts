@@ -233,7 +233,7 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
             }
 
             // Draw profile pictures in a grid
-            const maxProfiles = Math.min(6, followList.entries.length);
+            const maxProfiles = Math.min(6, profilesWithPictures.length);
             const profileSize = 180;
             const spacing = -10;
             const startX = (width - (maxProfiles * (profileSize + spacing) - spacing)) / 2;

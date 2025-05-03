@@ -18,7 +18,7 @@ export function isValidNpub(input: string): boolean {
  * Convert npub to hex pubkey
  */
 export async function npubToHex(npub: string): Promise<string | null> {
-    logDebug('Converting npub to hex:', npub);
+    // logDebug('Converting npub to hex:', npub);
     try {
         if (!isValidNpub(npub)) {
             logDebug('Invalid npub format');
@@ -27,7 +27,7 @@ export async function npubToHex(npub: string): Promise<string | null> {
 
         // Use nostr-tools bech32 conversion
         const { data } = nip19.decode(npub);
-        logDebug('Converted to hex:', data);
+        // logDebug('Converted to hex:', data);
         return data as string;
     } catch (error) {
         console.error('Error converting npub to hex:', error);
@@ -40,11 +40,11 @@ export async function npubToHex(npub: string): Promise<string | null> {
  * Convert hex pubkey to npub
  */
 export async function hexToNpub(hex: string): Promise<string | null> {
-    logDebug('Converting hex to npub:', hex);
+    // logDebug('Converting hex to npub:', hex);
     try {
         // Use nostr-tools bech32 conversion
         const npub = nip19.npubEncode(hex);
-        logDebug('Converted to npub:', npub);
+        // logDebug('Converted to npub:', npub);
         return npub;
     } catch (error) {
         console.error('Error converting hex to npub:', error);

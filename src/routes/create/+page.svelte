@@ -6,7 +6,7 @@
   import { isValidNpub, npubToHex, isValidNprofile, nprofileToNpubAndRelays } from '$lib/utils/npub';
   import { publishFollowList, getFollowListById, deleteFollowList } from '$lib/services/follow-list.service';
   import { getProfileByPubkey } from '$lib/stores/user';
-  import { type UserSearchResult } from '$lib/services/user-search';
+  import { type UserSearchResult, searchUsersByName } from '$lib/services/user-search';
   import type { FollowListEntry } from '$lib/types/follow-list';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import ProfileImage from '$lib/components/ProfileImage.svelte';
@@ -26,6 +26,7 @@
   let submitting = false;
   let error = '';
   let duplicateEntryError = false;
+  let noSearchResults = false;
   let editMode = false;
   let editId = '';
   let listId = '';
@@ -100,12 +101,12 @@
         return;
       }
       
-      // Check if the user is the author
-      if (!$user || $user.pubkey !== list.pubkey) {
-        error = 'You are not authorized to edit this follow list';
-        editMode = false;
-        return;
-      }
+      // // Check if the user is the author
+      // if (!$user || $user.pubkey !== list.pubkey) {
+      //   error = 'You are not authorized to edit this follow list';
+      //   editMode = false;
+      //   return;
+      // }
       
       // Load the list data into the form
       name = list.name;
@@ -138,6 +139,7 @@
     
     searching = true;
     searchResults = [];
+    duplicateEntryError = false;
     
     try {
       if (isValidNpub(searchQuery)) {
@@ -207,6 +209,21 @@
           name: profile.name || 'Unknown',
           picture: profile.picture || '',
         }];
+      } else {
+        // Search for users by name
+        const results = await searchUsersByName(searchQuery);
+        
+        // Filter out duplicates that are already in the selected entries
+        searchResults = results.filter(result => 
+          !selectedEntries.some(entry => entry.pubkey === result.pubkey)
+        );
+        
+        if (results.length > 0 && searchResults.length === 0) {
+          noSearchResults = true;
+          setTimeout(() => {
+            noSearchResults = false;
+          }, 3000);
+        }
       }
       
       logDebug(`Search returned ${searchResults.length} results`);
@@ -475,7 +492,7 @@
                 id="search"
                 bind:value={searchQuery}
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Enter npub"
+                placeholder="Enter username or npub"
                 on:keydown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -486,19 +503,18 @@
               <button
                 type="button"
                 on:click={handleSearch}
-                disabled={searching || searchQuery.length < 3 || (!isValidNpub(searchQuery) && !isValidNprofile(searchQuery))}
+                disabled={searching || searchQuery.length < 3}
                 class="px-4 py-2 bg-purple-600 text-white rounded-r-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
               >
-                {searching ? 'Searching...' : 'Add User'}
+                {searching ? 'Searching...' : 'Search'}
               </button>
             </div>
             <p class="mt-1 text-xs text-gray-500">
-              <!-- Search by username or paste a nostr npub (starting with npub1...) -->
-               {#if duplicateEntryError}
+              {#if duplicateEntryError}
                 <span class="text-red-600">This user is already in your list!</span>
-               {:else}
-                Paste nostr npub to add users to your list
-               {/if}
+              {:else}
+                Search by username or paste a nostr npub/nprofile
+              {/if}
             </p>
             
             {#if error}
@@ -507,7 +523,14 @@
           </div>
           
           <!-- Search results -->
-          {#if searchResults.length > 0}
+          {#if searching}
+            <div class="bg-white rounded-md shadow-sm mt-4 p-4 text-center">
+              <div class="flex justify-center">
+                <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-purple-600"></div>
+              </div>
+              <p class="mt-2 text-gray-600">Searching...</p>
+            </div>
+          {:else if searchResults.length > 0}
             <div class="bg-white rounded-md shadow-sm mt-4">
               <ul class="divide-y divide-gray-200">
                 {#each searchResults as result}
@@ -520,7 +543,12 @@
                         classes="mr-3"
                       />
                       <div>
-                        <h4 class="text-lg font-medium text-gray-900">{result.name || 'Unknown User'}</h4>
+                        <div class="flex items-center">
+                          <h4 class="text-lg font-medium text-gray-900">{result.name || 'Unknown User'}</h4>
+                          {#if $user?.following?.has(result.pubkey)}
+                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Following</span>
+                          {/if}
+                        </div>
                         <PublicKeyDisplay pubkey={result.pubkey} />
                         {#if result.relays.length > 0}
                           <p class="text-xs text-gray-500">
@@ -539,6 +567,10 @@
                   </li>
                 {/each}
               </ul>
+            </div>
+          {:else if searchQuery.length >= 3 && noSearchResults}
+            <div class="bg-white rounded-md shadow-sm mt-4 p-4 text-center text-gray-600">
+              No users found matching "{searchQuery}"
             </div>
           {/if}
           

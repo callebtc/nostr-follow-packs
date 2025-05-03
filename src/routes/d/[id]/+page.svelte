@@ -149,13 +149,13 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Following._ Nostr" />
   <meta property="og:description" content="{followList?.description || 'A Nostr Follow Pack'}" />
-  <meta property="og:image" content="{`https://${$page.url.host}/d/${$page.params.id}.jpg`}" />
+  <meta property="og:image" content="{`https://${$page.url.host}/d/${$page.params.id}.png`}" />
   <meta property="og:url" content="{$page.url.pathname}"/>
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="twitter:title" content="Following._ Nostr" />
   <meta property="twitter:description" content="{followList?.description || 'A Nostr Follow Pack'}" />
-  <meta property="twitter:image" content="{`https://${$page.url.host}/d/${$page.params.id}.jpg`}" />
+  <meta property="twitter:image" content="{`https://${$page.url.host}/d/${$page.params.id}.png`}" />
 </svelte:head>
 
 <div class="container py-10 people-container">

@@ -128,7 +128,6 @@ export const handle: Handle = async ({ event, resolve }) => {
                             'Connection to nostr relays timed out'
                         );
 
-                        logDebug('[!imageExists] Follow list:', followList);
                         logDebug('[!imageExists] Generating image');
 
                         await withTimeout(

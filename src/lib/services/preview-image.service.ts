@@ -252,8 +252,14 @@ export async function generatePreviewImage(followList: FollowList, outputPath: s
                 ctx.closePath();
                 ctx.clip();
 
-                // Draw the profile image
-                ctx.drawImage(profileImg, x, y, profileSize, profileSize);
+                // Calculate source rectangle for center crop
+                const sourceSize = Math.min(profileImg.width, profileImg.height);
+                const sx = (profileImg.width - sourceSize) / 2;
+                const sy = (profileImg.height - sourceSize) / 2;
+
+                // Draw the cropped profile image
+                ctx.drawImage(profileImg, sx, sy, sourceSize, sourceSize, x, y, profileSize, profileSize);
+
 
                 // Draw a purple border around the profile picture
                 ctx.strokeStyle = '#7740f7';

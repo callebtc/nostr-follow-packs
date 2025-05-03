@@ -140,6 +140,8 @@
     searching = true;
     searchResults = [];
     duplicateEntryError = false;
+    noSearchResults = false; // Reset no results flag
+    error = ''; // Clear previous errors
     
     try {
       if (isValidNpub(searchQuery)) {
@@ -347,6 +349,17 @@
   function cancelRemoveAll() {
     showRemoveAllConfirm = false;
   }
+
+  // Function to handle input changes in the search box
+  function handleInputChange() {
+    if (searching) {
+      logDebug('Input changed, aborting search.');
+      searching = false;
+      searchResults = []; // Clear results immediately
+      noSearchResults = false;
+      error = ''; // Clear any search error
+    }
+  }
 </script>
 
 <div class="container py-10">
@@ -499,6 +512,7 @@
                     handleSearch();
                   }
                 }}
+                on:input={handleInputChange}
               />
               <button
                 type="button"

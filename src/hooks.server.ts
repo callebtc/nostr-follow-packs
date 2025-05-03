@@ -155,8 +155,8 @@ export const handle: Handle = async ({ event, resolve }) => {
             <meta name="twitter:image" content="${url.origin.replace('http:', 'https:')}${relativeImagePath}" />
           `;
 
-                // Insert meta tags into the HTML head
-                const updatedHtml = html.replace('</head>', `${metaTags}</head>`);
+                // Remove all meta tags and insert our meta tags into the HTML head
+                const updatedHtml = html.replace(/<meta[^>]*>/g, '').replace('</head>', `${metaTags}</head>`);
 
                 return new Response(updatedHtml, {
                     status: response.status,

@@ -50,7 +50,7 @@
     } catch (err) {
       console.error('Error restoring snapshot:', err);
       messageType = 'error';
-      message = `Error: ${err.message || 'Unknown error'}`;
+      message = `Error: ${err instanceof Error ? err.message : 'Unknown error'}`;
     } finally {
       restoring = false;
       restoringId = '';

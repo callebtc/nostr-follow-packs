@@ -7,6 +7,6 @@ export default defineConfig({
 		fs: {
 			allow: ['cache']
 		},
-		allowedHosts: ['following.space']
+		allowedHosts: ['following.space', 'staging.following.space']
 	}
 });

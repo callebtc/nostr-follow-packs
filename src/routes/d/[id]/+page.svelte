@@ -19,7 +19,6 @@
   let success = '';
   let followingAll = false;
   let activeTab = 'people'; // Default active tab
-  let listStaticCoverImageUrl = '';
 
   // Function to load profile for a specific entry
   async function loadProfileForEntry(entryIndex: number) {
@@ -62,9 +61,6 @@
         error = true;
         return;
       }
-
-      // cover image url is https://<our-domain>/<listId>.jpg
-      listStaticCoverImageUrl = `https://${$page.url.host}/d/${listId}.jpg`;
       
       // Mark as loaded to show UI immediately
       loading = false;
@@ -153,13 +149,13 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Following._ Nostr" />
   <meta property="og:description" content="{followList?.description || 'A Nostr Follow Pack'}" />
-  <meta property="og:image" content="{listStaticCoverImageUrl}" />
+  <meta property="og:image" content="{`https://${$page.url.host}/d/${$page.params.id}.jpg`}" />
   <meta property="og:url" content="{$page.url.pathname}"/>
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="twitter:title" content="Following._ Nostr" />
   <meta property="twitter:description" content="{followList?.description || 'A Nostr Follow Pack'}" />
-  <meta property="twitter:image" content="{listStaticCoverImageUrl}" />
+  <meta property="twitter:image" content="{`https://${$page.url.host}/d/${$page.params.id}.jpg`}" />
 </svelte:head>
 
 <div class="container py-10 people-container">

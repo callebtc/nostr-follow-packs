@@ -12,6 +12,7 @@
   import { hexToNpub } from '$lib/services/vertex-search';
   import CopyEvent from '$lib/components/CopyEvent.svelte';
   import { initOptionalAuth } from '$lib/services/auth';
+  import ProfileImage from '$lib/components/ProfileImage.svelte';
   let followList: FollowList | null = null;
   let loading = true;
   let error = false;
@@ -230,6 +231,9 @@
             src={followList.coverImageUrl} 
             alt={followList.name} 
             class="w-full h-full object-cover"
+            on:error={(e) => {
+              (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+            }}
           />
         </div>
       {/if}
@@ -240,13 +244,13 @@
           <h1 class="text-3xl font-bold text-gray-900">{followList.name}</h1>
           
             <div class="flex mt-2">
-              <button on:click={() => openProfilePage(followList?.pubkey || '')}>
-              <img 
-                src={followList.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+              <ProfileImage 
+                src={followList.authorPicture} 
                 alt={followList.authorName || 'Author'} 
-                class="w-6 h-6 rounded-full object-cover mr-2"
+                size="sm" 
+                classes="mr-2"
+                onClick={() => openProfilePage(followList?.pubkey || '')}
               />
-              </button>
               <button on:click={() => openProfilePage(followList?.pubkey || '')}>
               <span class="text-gray-600">Created by {followList.authorName || 'Unknown'}</span>
               </button>
@@ -317,14 +321,14 @@
             <li class="p-4 sm:p-6 flex items-start justify-between">
               <div class="flex items-start">
                 <div class="min-w-[60px]">
-                  <button on:click={() => openProfilePage(entry.pubkey)}>
-                  <img 
-                      src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                      alt={entry.name || 'User'} 
-                      class="w-10 h-10 rounded-full object-cover mr-4"
-                      style="margin-top: 0.5rem !important;"
-                    />
-                  </button>
+                  <ProfileImage 
+                    src={entry.picture} 
+                    alt={entry.name || 'User'} 
+                    size="lg" 
+                    classes="mr-4"
+                    style="margin-top: 0.5rem !important;"
+                    onClick={() => openProfilePage(entry.pubkey)}
+                  />
                 </div>
                 <div>
                   <h3 class="text-lg font-medium text-gray-900">

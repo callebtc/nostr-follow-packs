@@ -9,6 +9,7 @@
   import type { VertexSearchResult } from '$lib/services/vertex-search';
   import type { FollowList, FollowListEntry } from '$lib/types/follow-list';
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
+  import ProfileImage from '$lib/components/ProfileImage.svelte';
 
   // Debug logging
   const DEBUG = true;
@@ -298,7 +299,7 @@
       <div class="bg-yellow-50 border border-yellow-200 rounded-md p-6 text-center">
         <h2 class="text-xl font-medium text-yellow-800 mb-2">Login Required</h2>
         <p class="text-yellow-700 mb-4">
-          You need to be logged in with a NIP-07 extension to create a follow list.
+          You need to be logged in to create a follow list.
         </p>
         <a href="/" class="btn btn-primary">Back to Home</a>
       </div>
@@ -406,7 +407,7 @@
                 <img 
                   src={coverImageUrl} 
                   alt="Cover Preview" 
-                  class="w-full h-full object-cover" 
+                  class="w-full h-full object-cover"
                   on:error={(e) => {
                     (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
                   }} 
@@ -459,25 +460,26 @@
           
           <!-- Search results -->
           {#if searchResults.length > 0}
-            <div class="mb-6 border border-gray-200 rounded-md overflow-hidden">
+            <div class="bg-white rounded-md shadow-sm mt-4">
               <ul class="divide-y divide-gray-200">
                 {#each searchResults as result}
-                  <li class="p-3 flex items-center justify-between hover:bg-gray-50">
+                  <li class="p-4 flex items-center justify-between">
                     <div class="flex items-center">
-                      <img 
-                        src={result.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                      <ProfileImage 
+                        src={result.picture} 
                         alt={result.name || 'User'} 
-                        class="w-8 h-8 rounded-full object-cover mr-3"
+                        size="md" 
+                        classes="mr-3"
                       />
                       <div>
-                        <p class="font-medium">{result.name || 'Unknown User'}</p>
+                        <h4 class="text-lg font-medium text-gray-900">{result.name || 'Unknown User'}</h4>
                         <PublicKeyDisplay pubkey={result.pubkey} />
                       </div>
                     </div>
                     <button
                       type="button"
                       on:click={() => addEntry(result)}
-                      class="text-sm text-purple-600 hover:text-purple-800"
+                      class="btn btn-primary btn-sm"
                     >
                       Add to List
                     </button>
@@ -542,10 +544,11 @@
                 {#each selectedEntries as entry, i}
                   <li class="p-3 flex items-center justify-between">
                     <div class="flex items-center">
-                      <img 
-                        src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                      <ProfileImage 
+                        src={entry.picture} 
                         alt={entry.name || 'User'} 
-                        class="w-8 h-8 rounded-full object-cover mr-3"
+                        size="md" 
+                        classes="mr-3"
                       />
                       <div>
                         <p class="font-medium">{entry.name || 'Unknown User'}</p>

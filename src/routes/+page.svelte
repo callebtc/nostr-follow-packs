@@ -7,6 +7,7 @@
   import { getFollowLists, LIST_LIMIT, getAuthorProfile, getProfileInfoForEntries } from '$lib/services/follow-list.service';
   import type { FollowList } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
+  import ProfileImage from '$lib/components/ProfileImage.svelte';
 
   type FilterType = "none" | "follows" | "included";
   const FILTER_NONE: FilterType = "none";
@@ -333,6 +334,9 @@
                   src={list.coverImageUrl} 
                   alt={list.name} 
                   class="w-full h-full object-cover"
+                  on:error={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                  }}
                 />
               {:else}
                 <div class="w-full h-full flex items-center justify-center text-gray-400">
@@ -347,10 +351,11 @@
               
               <!-- Author info -->
               <div class="flex items-center mb-3">
-                <img 
-                  src={list.authorPicture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                <ProfileImage 
+                  src={list.authorPicture} 
                   alt={list.authorName || 'Author'} 
-                  class="w-5 h-5 rounded-full object-cover mr-2"
+                  size="xs" 
+                  classes="mr-2"
                 />
                 <span class="text-sm text-gray-600">{list.authorName || 'Unknown User'}</span>
               </div>
@@ -358,10 +363,11 @@
               <!-- Preview of users in the list -->
               <div class="flex -space-x-2 overflow-hidden mt-4">
                 {#each list.entries.slice(0, 5) as entry}
-                  <img 
-                    src={entry.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                  <ProfileImage 
+                    src={entry.picture} 
                     alt={entry.name || 'User'} 
-                    class="w-8 h-8 rounded-full object-cover border-2 border-white"
+                    size="md" 
+                    classes="border-2 border-white"
                     style="margin-top: 0px;"
                   />
                 {/each}

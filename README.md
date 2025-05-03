@@ -1,14 +1,6 @@
 # Nostr Follow List
 
-A modern and minimalistic Nostr application for creating, sharing, and discovering Nostr follow lists.
-
-## Features
-
-- 🚀 Create and publish follow lists as Nostr events
-- 🔍 Discover other users' follow lists
-- 🔎 Search for Nostr users by name or npub
-- 🔄 Follow users directly from follow lists
-- 🔐 Login with NIP-07 compatible browser extensions
+A minimalistic Nostr application for creating, sharing, and discovering Nostr Follow Packs.
 
 ## Tech Stack
 
@@ -24,15 +16,14 @@ A modern and minimalistic Nostr application for creating, sharing, and discoveri
 
 - Node.js (v16 or higher)
 - npm (v7 or higher)
-- A NIP-07 compatible browser extension (like [Alby](https://getalby.com/) or [nos2x](https://github.com/fiatjaf/nos2x))
 
 ### Installation
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/nostr-follow-list.git
-cd nostr-follow-list
+git clone https://github.com/callebtc/nostr-follow-packs.git
+cd nostr-follow-packs
 ```
 
 2. Install dependencies:
@@ -115,7 +106,7 @@ Follow lists are published as Nostr events with `kind: 39089`. This is a paramet
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/yourusername/nostr-follow-list/issues).
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/callebtc/nostr-follow-packs/issues).
 
 ## License
 

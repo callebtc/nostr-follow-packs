@@ -6,6 +6,7 @@
   import PublicKeyDisplay from '$lib/components/PublicKeyDisplay.svelte';
   import FollowButton from '$lib/components/FollowButton.svelte';
   import { hexToNpub } from '$lib/services/vertex-search';
+  import ProfileImage from '$lib/components/ProfileImage.svelte';
   export let pubkeys: string[] = [];
   export let entries: FollowListEntry[] = [];
   
@@ -171,14 +172,14 @@
         <li class="p-4 sm:p-8">
           <!-- Post header with user info -->
           <div class="flex items-start mb-3">
-            <button on:click={() => openProfilePage(post.pubkey)}>
-            <img 
-              src={post.profile.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+            <ProfileImage 
+              src={post.profile.picture} 
               alt={post.profile.name || 'User'} 
-              class="w-10 h-10 rounded-full object-cover mr-4"
+              size="lg" 
+              classes="mr-4"
               style="margin-top: 0.5rem !important;"
+              onClick={() => openProfilePage(post.pubkey)}
             />
-            </button>
             <div class="flex-grow">
               <h3 class="text-lg font-medium text-gray-900 mt-1">
                 <button on:click={() => openProfilePage(post.pubkey)}>

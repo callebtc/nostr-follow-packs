@@ -7,6 +7,7 @@
   import { initializeAuth } from '$lib/services/auth';
   import LoginButton from '$lib/components/LoginButton.svelte';
   import { browser } from '$app/environment';
+  import ProfileImage from '$lib/components/ProfileImage.svelte';
 
   let showUserMenu = false;
   let showLogoutConfirm = false;
@@ -82,10 +83,10 @@
               on:click={toggleUserMenu}
               class="flex items-center space-x-2 focus:outline-none"
             >
-              <img 
-                src={$user.picture || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+              <ProfileImage 
+                src={$user.picture} 
                 alt={$user.name || 'User'} 
-                class="w-8 h-8 rounded-full object-cover"
+                size="md"
               />
               <span class="font-medium">{$user.name || 'Anonymous'}</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
@@ -151,7 +152,7 @@
 
   <footer class="bg-white border-t">
     <div class="container py-6 text-center text-gray-500">
-      <p><strong>Following._</strong> is open source and made by <a href="https://github.com/callebtc/nostr-follow-list" class="text-purple-600 hover:text-purple-700">calle</a> with love.</p>
+      <p><strong>Following._</strong> is open source and made by <a href="https://github.com/callebtc/nostr-follow-packs" class="text-purple-600 hover:text-purple-700">calle</a> with love.</p>
     </div>
   </footer>
 </div> 

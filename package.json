@@ -1,5 +1,5 @@
 {
-	"name": "nostr-follow-list",
+	"name": "nostr-follow-packs",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",

@@ -89,7 +89,7 @@
       <div class="bg-yellow-50 border border-yellow-200 rounded-md p-6 text-center">
         <h2 class="text-xl font-medium text-yellow-800 mb-2">Login Required</h2>
         <p class="text-yellow-700 mb-4">
-          You need to be logged in with a NIP-07 extension to access settings.
+          You need to be logged in to access settings.
         </p>
         <a href="/" class="btn btn-primary">Back to Home</a>
       </div>

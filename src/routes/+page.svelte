@@ -162,11 +162,7 @@
   }
 
   onMount(async () => {
-    try{
-      await initializeAuth();
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-    }
+    initializeAuth();
     try {
       // Load filter preference from localStorage
       if (typeof localStorage !== 'undefined') {

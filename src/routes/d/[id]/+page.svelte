@@ -46,7 +46,7 @@
   onMount(async () => {
     try {
       // Initialize optional authentication (will work whether user is logged in or not)
-      await initOptionalAuth();
+      initOptionalAuth();
       
       // Get the list ID from the URL
       const listId = $page.params.id;

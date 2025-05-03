@@ -142,7 +142,7 @@
 </script>
 
 <svelte:head>
-  <title>Following._ {followList?.name || 'Loading...'}</title>
+  <title>Following._ {followList?.name || 'Nostr'}</title>
   <meta name="title" content="Following._ Nostr" />
   <meta name="description" content="{followList?.description || 'A Nostr Follow Pack'}" />
 

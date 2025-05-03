@@ -8,7 +8,7 @@
   import type { FollowList } from '$lib/types/follow-list';
   import { getRelativeTime } from '$lib/utils/date';
   import ProfileImage from '$lib/components/ProfileImage.svelte';
-
+  import { initializeAuth } from '$lib/services/auth';
   type FilterType = "none" | "follows" | "included";
   const FILTER_NONE: FilterType = "none";
   const FILTER_USER_FOLLOWS: FilterType = "follows";
@@ -162,6 +162,11 @@
   }
 
   onMount(async () => {
+    try{
+      await initializeAuth();
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+    }
     try {
       // Load filter preference from localStorage
       if (typeof localStorage !== 'undefined') {
@@ -170,7 +175,6 @@
           filterType = savedFilter as FilterType;
         }
       }
-      
       await loadAllFollowLists();
     } catch (error) {
       console.error('Error fetching follow lists:', error);

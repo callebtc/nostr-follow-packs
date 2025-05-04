@@ -59,28 +59,28 @@
     };
   });
 
-  async function loadFollowLists(until?: number) {
+  async function loadFollowLists(until?: number, filter: FilterType = FILTER_NONE) {
     try {
       let lists: FollowList[] = [];
 
       let ourUser = get(user);
       if (!ourUser) await loadUser();
       ourUser = get(user);
-      if (filterType === FILTER_NONE) {
+      if (filter === FILTER_NONE) {
         // Get all lists
         lists = await getFollowLists(LIST_LIMIT, undefined, until);
       } else {
           if (!ourUser) {
             return [];
           }
-          if (filterType === FILTER_USER_FOLLOWS) {
+          if (filter === FILTER_USER_FOLLOWS) {
           // Get lists from followed users and self
           const followsArray = ourUser.following ? Array.from(ourUser.following) : [];
           lists = await getFollowLists(LIST_LIMIT, undefined, until, followsArray);
-        } else if (filterType === FILTER_USER_INCLUDED) {
+        } else if (filter === FILTER_USER_INCLUDED) {
           // Get lists that include the current user
           lists = await getFollowLists(LIST_LIMIT, undefined, until, undefined, [ourUser.pubkey]);
-        } else if (filterType === FILTER_USER_OURS) {
+        } else if (filter === FILTER_USER_OURS) {
           // Get lists from the current user
           lists = await getFollowLists(LIST_LIMIT, undefined, until, [ourUser.pubkey]);
         }
@@ -114,7 +114,7 @@
       
       // Race between the actual request and the timeout
       const moreLists = await Promise.race([
-        loadFollowLists(until),
+        loadFollowLists(until, filterType),
         timeoutPromise
       ]) as FollowList[];
       
@@ -144,9 +144,9 @@
     }
   }
 
-  async function loadAllFollowLists(isFiltered = false) {
+  async function loadAllFollowLists(isFiltered = false, filter: FilterType = FILTER_NONE) {
     // Load follow lists first and render them immediately
-    const lists = await loadFollowLists();
+    const lists = await loadFollowLists(undefined, filter);
     if (!isFiltered && followLists.length != 0) {
       return;
     } 
@@ -170,21 +170,22 @@
   }
 
   onMount(async () => {
-    loadAllFollowLists(false);
+    const currentUser = get(user);
+    // Load filter preference from localStorage
+    if (typeof localStorage !== 'undefined') {
+      const savedFilter = localStorage.getItem('filterType');
+      if (savedFilter !== null) {
+        filterType = savedFilter as FilterType;
+      }
+    }
+    loadAllFollowLists(false, currentUser ? filterType : undefined);
     try {
       initializeAuth(() => {
-      // Load filter preference from localStorage
-      if (typeof localStorage !== 'undefined') {
-          const savedFilter = localStorage.getItem('filterType');
-          if (savedFilter !== null) {
-            filterType = savedFilter as FilterType;
-          }
-        }
         // if filter type is none, we don't need to reload the lists  
         if (filterType === FILTER_NONE) {
           return;
         }
-        loadAllFollowLists(true);
+        loadAllFollowLists(true, filterType);
       });
     } catch (error) {
       console.error('Error fetching follow lists:', error);
@@ -231,7 +232,7 @@
     
     followLists = [];
     loading = true;
-    await loadAllFollowLists();
+    await loadAllFollowLists(true, filterType);
     loading = false;
   }
 </script>

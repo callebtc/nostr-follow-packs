@@ -19,7 +19,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Create a directory for storing generated preview images
-const CACHE_DIR = path.join(__dirname, '../static/preview-images');
+// Use an absolute path that doesn't change based on server file location
+const CACHE_DIR = path.join(process.cwd(), 'static/preview-images');
 if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
 }

@@ -11,6 +11,7 @@ import type {
 } from '$lib/types/follow-list';
 import { getProfileByPubkey, loadUser, user } from '$lib/stores/user';
 import { get } from 'svelte/store';
+import { filterFollowLists } from './filter';
 
 export const LIST_LIMIT = 20;
 
@@ -61,9 +62,12 @@ export async function getFollowLists(limit: number = LIST_LIMIT, since?: number,
 
         // Sort by created_at (newest first)
         const sortedLists = followLists.sort((a, b) => b.createdAt - a.createdAt);
-        logDebug(`Returning ${sortedLists.length} follow lists`);
 
-        return sortedLists;
+        // Apply filter
+        const filteredLists = filterFollowLists(sortedLists);
+        logDebug(`Returning ${filteredLists.length} follow lists`);
+
+        return filteredLists;
     } catch (error) {
         console.error('Error fetching follow lists:', error);
         logDebug('Error fetching follow lists:', error);

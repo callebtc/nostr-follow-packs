@@ -88,7 +88,7 @@ export const handle: Handle = async ({ event, resolve }) => {
                         );
 
                         followList = await withTimeout(
-                            getFollowListById(listId),
+                            getFollowListById(listId, pubKey ?? undefined),
                             5000,
                             'Fetching follow list data timed out'
                         );
@@ -130,12 +130,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
                         logDebug('[!imageExists] Generating image');
 
-                        await withTimeout(
+                        const imagePath = await withTimeout(
                             generatePreviewImage(followList, cachePath),
                             10000,
                             'Generating preview image timed out'
                         );
-                        logDebug('[!imageExists] ✅ Image successfully generated');
+                        logDebug('[!imageExists] ✅ Image successfully generated', imagePath);
                     } catch (error) {
                         console.error('Error generating preview image:', error);
                         // Fallback to default image or continue without image
